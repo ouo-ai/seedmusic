@@ -1,11 +1,11 @@
 "use client"
 
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useSyncExternalStore } from "react"
 
-import { createListStore } from "@/lib/list-store"
-import { createId, LIBRARY_KEY, type LibraryTrack, nowMs } from "@/lib/studio-store"
+import { createResourceStore } from "@/lib/resource-store"
+import { createId, type LibraryTrack, nowMs } from "@/lib/studio-store"
 
-const store = createListStore<LibraryTrack>(LIBRARY_KEY)
+const store = createResourceStore<LibraryTrack>("/api/tracks")
 const EMPTY: LibraryTrack[] = []
 
 export type NewTrack = Omit<LibraryTrack, "id" | "createdAt"> & Partial<Pick<LibraryTrack, "id" | "createdAt">>
@@ -13,18 +13,22 @@ export type NewTrack = Omit<LibraryTrack, "id" | "createdAt"> & Partial<Pick<Lib
 export function useLibrary() {
   const tracks = useSyncExternalStore(store.subscribe, store.get, () => EMPTY)
 
+  useEffect(() => {
+    store.ensureLoaded()
+  }, [])
+
   const addTrack = useCallback((track: NewTrack): LibraryTrack => {
     const full: LibraryTrack = { ...track, id: track.id ?? createId(), createdAt: track.createdAt ?? nowMs() }
-    store.set((prev) => [full, ...prev.filter((item) => item.id !== full.id)])
+    store.add(full)
     return full
   }, [])
 
   const updateTrack = useCallback((id: string, patch: Partial<LibraryTrack>) => {
-    store.set((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+    store.update(id, patch)
   }, [])
 
   const removeTrack = useCallback((id: string) => {
-    store.set((prev) => prev.filter((item) => item.id !== id))
+    store.remove(id)
   }, [])
 
   return { tracks, addTrack, updateTrack, removeTrack }

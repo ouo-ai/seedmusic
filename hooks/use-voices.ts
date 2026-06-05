@@ -1,12 +1,12 @@
 "use client"
 
-import { useCallback, useSyncExternalStore } from "react"
+import { useCallback, useEffect, useSyncExternalStore } from "react"
 
-import { createListStore } from "@/lib/list-store"
-import { createId, nowMs, PERSONAS_KEY, type Persona, type Voice, VOICES_KEY } from "@/lib/studio-store"
+import { createResourceStore } from "@/lib/resource-store"
+import { createId, nowMs, type Persona, type Voice } from "@/lib/studio-store"
 
-const voiceStore = createListStore<Voice>(VOICES_KEY)
-const personaStore = createListStore<Persona>(PERSONAS_KEY)
+const voiceStore = createResourceStore<Voice>("/api/voices")
+const personaStore = createResourceStore<Persona>("/api/personas")
 const EMPTY_VOICES: Voice[] = []
 const EMPTY_PERSONAS: Persona[] = []
 
@@ -16,18 +16,22 @@ type NewPersona = Omit<Persona, "id" | "createdAt"> & Partial<Pick<Persona, "id"
 export function useVoices() {
   const voices = useSyncExternalStore(voiceStore.subscribe, voiceStore.get, () => EMPTY_VOICES)
 
+  useEffect(() => {
+    voiceStore.ensureLoaded()
+  }, [])
+
   const addVoice = useCallback((voice: NewVoice): Voice => {
     const full: Voice = { ...voice, id: voice.id ?? createId(), createdAt: voice.createdAt ?? nowMs() }
-    voiceStore.set((prev) => [full, ...prev.filter((item) => item.id !== full.id)])
+    voiceStore.add(full)
     return full
   }, [])
 
   const updateVoice = useCallback((id: string, patch: Partial<Voice>) => {
-    voiceStore.set((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+    voiceStore.update(id, patch)
   }, [])
 
   const removeVoice = useCallback((id: string) => {
-    voiceStore.set((prev) => prev.filter((item) => item.id !== id))
+    voiceStore.remove(id)
   }, [])
 
   return { voices, addVoice, updateVoice, removeVoice }
@@ -36,14 +40,18 @@ export function useVoices() {
 export function usePersonas() {
   const personas = useSyncExternalStore(personaStore.subscribe, personaStore.get, () => EMPTY_PERSONAS)
 
+  useEffect(() => {
+    personaStore.ensureLoaded()
+  }, [])
+
   const addPersona = useCallback((persona: NewPersona): Persona => {
     const full: Persona = { ...persona, id: persona.id ?? createId(), createdAt: persona.createdAt ?? nowMs() }
-    personaStore.set((prev) => [full, ...prev.filter((item) => item.id !== full.id)])
+    personaStore.add(full)
     return full
   }, [])
 
   const removePersona = useCallback((id: string) => {
-    personaStore.set((prev) => prev.filter((item) => item.id !== id))
+    personaStore.remove(id)
   }, [])
 
   return { personas, addPersona, removePersona }
