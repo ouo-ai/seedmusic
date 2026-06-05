@@ -1,0 +1,71 @@
+// Prisma schema for SeedMusic — Supabase Postgres.
+// Models mirror the client-side studio store (lib/studio-store.ts) so the
+// localStorage layer can later be swapped for DB-backed API routes.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// A generated track or single-track-action result.
+model Track {
+  id        String   @id @default(cuid())
+  taskId    String?
+  audioId   String?
+  title     String
+  audioUrl  String?
+  imageUrl  String?
+  model     String?
+  workflow  String
+  tags      String?
+  prompt    String?
+  duration  Float?
+  status    String   @default("pending") // pending | ready | failed
+  error     String?
+  derived   Json? // [{ label, url }]
+  ownerId   String? // reserved for future auth; null = anonymous
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+/// A custom voice created through the multi-step voice wizard.
+model Voice {
+  id             String   @id @default(cuid())
+  name           String
+  status         String   @default("validating") // validating | phrase-ready | generating | ready | failed
+  validateTaskId String?
+  phrase         String?
+  generateTaskId String?
+  voiceId        String?
+  language       String?
+  error          String?
+  ownerId        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([ownerId])
+}
+
+/// A reusable music persona extracted from a track.
+model Persona {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  personaId     String?
+  personaModel  String?
+  sourceTaskId  String?
+  sourceAudioId String?
+  ownerId       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([ownerId])
+}
