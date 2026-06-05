@@ -102,7 +102,7 @@ function extractState(value: unknown): "pending" | "ready" | "failed" {
   const status =
     typeof data.status === "string" ? data.status : typeof data.successFlag === "string" ? data.successFlag : ""
   if (/FAIL|FAILED|ERROR|EXCEPTION|SENSITIVE/i.test(status)) return "failed"
-  if (status === "SUCCESS" || status === "FIRST_SUCCESS") return "ready"
+  if (status === "SUCCESS") return "ready"
   return "pending"
 }
 
