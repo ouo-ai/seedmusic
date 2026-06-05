@@ -126,9 +126,12 @@ export const metadata: Metadata = {
     images: ["/opengraph-image"],
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/apple-icon.png",
+    icon: [
+      { url: "/icons/seedmusic-favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/seedmusic-icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icons/seedmusic-favicon-32.png",
+    apple: "/icons/seedmusic-apple-icon-180.png",
   },
   robots: {
     index: true,
