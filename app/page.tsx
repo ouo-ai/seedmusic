@@ -2,13 +2,14 @@
 
 import type React from "react"
 import { useState, useEffect, useRef } from "react"
+import Link from "next/link"
 import DocumentationSection from "../components/documentation-section"
 import TestimonialsSection from "../components/testimonials-section"
 import FAQSection from "../components/faq-section"
 import PricingSection from "../components/pricing-section"
 import CTASection from "../components/cta-section"
 import FooterSection from "../components/footer-section"
-import MusicPromptComposer from "../components/music-prompt-composer"
+import { StudioTeaser } from "../components/studio-teaser"
 import WorkflowSection from "../components/workflow-section"
 import UseCasesSection from "../components/use-cases-section"
 
@@ -271,9 +272,9 @@ export default function LandingPage() {
 
                 {/* CTAs */}
                 <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
-                  <div className="h-10 sm:h-11 px-7 sm:px-9 py-2 bg-[#2A2420] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#1a1512] transition-colors">
+                  <Link href="/studio" className="h-10 sm:h-11 px-7 sm:px-9 py-2 bg-[#2A2420] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#1a1512] transition-colors">
                     <span className="text-white text-sm font-medium leading-5 font-sans">Open studio preview</span>
-                  </div>
+                  </Link>
                   <div className="h-10 sm:h-11 px-7 sm:px-9 py-2 bg-white border border-[rgba(42,36,32,0.14)] shadow-[0px_1px_2px_rgba(42,36,32,0.06)] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#f0ede9] transition-colors">
                     <span className="text-[#2A2420] text-sm font-medium leading-5 font-sans">See prompt examples</span>
                   </div>
@@ -283,7 +284,7 @@ export default function LandingPage() {
               {/* ── MUSIC PROMPT COMPOSER ──────────────── */}
               <div className="w-full max-w-[960px] mt-10 sm:mt-14 md:mt-16 px-2 sm:px-4 md:px-0 relative z-10">
                 <div className="w-full bg-white border border-[rgba(42,36,32,0.10)] shadow-[0px_1px_3px_rgba(42,36,32,0.08),0px_8px_32px_rgba(42,36,32,0.06)] rounded-2xl overflow-hidden">
-                  <MusicPromptComposer />
+                  <StudioTeaser />
                 </div>
               </div>
 

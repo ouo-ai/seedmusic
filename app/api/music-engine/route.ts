@@ -83,7 +83,62 @@ function extractTracks(value: unknown) {
               : typeof row.stream_audio_url === "string"
                 ? row.stream_audio_url
                 : undefined,
+      imageUrl:
+        typeof row.imageUrl === "string"
+          ? row.imageUrl
+          : typeof row.image_url === "string"
+            ? row.image_url
+            : typeof row.sourceImageUrl === "string"
+              ? row.sourceImageUrl
+              : typeof row.source_image_url === "string"
+                ? row.source_image_url
+                : undefined,
     }))
+}
+
+function extractState(value: unknown): "pending" | "ready" | "failed" {
+  const data = asRecord(asRecord(value).data)
+  const status = typeof data.status === "string" ? data.status : ""
+  if (/FAIL|ERROR|SENSITIVE/i.test(status)) return "failed"
+  if (status === "SUCCESS" || status === "FIRST_SUCCESS") return "ready"
+  return "pending"
+}
+
+// 提取文本类结果：boost-style 的 data.result；generate-lyrics 的 data.response.data[].text。
+function extractTexts(value: unknown): string[] {
+  const data = asRecord(asRecord(value).data)
+  const texts: string[] = []
+  if (typeof data.result === "string" && data.result.trim()) texts.push(data.result.trim())
+  const response = asRecord(data.response)
+  const rows = Array.isArray(response.data) ? response.data : Array.isArray(data.data) ? data.data : []
+  for (const item of rows) {
+    const row = asRecord(item)
+    if (typeof row.text === "string" && row.text.trim()) texts.push(row.text.trim())
+  }
+  return texts
+}
+
+// generate-persona 同步返回 data.personaId。
+function extractPersonaId(value: unknown): string | undefined {
+  const data = asRecord(asRecord(value).data)
+  if (typeof data.personaId === "string") return data.personaId
+  if (typeof data.persona_id === "string") return data.persona_id
+  return undefined
+}
+
+// voice/validate-info 返回 data.validateInfo（用户需朗读的验证短语）。
+function extractPhrase(value: unknown): string | undefined {
+  const data = asRecord(asRecord(value).data)
+  if (typeof data.validateInfo === "string" && data.validateInfo.trim()) return data.validateInfo.trim()
+  return undefined
+}
+
+// voice/record-info 等返回最终 voiceId。
+function extractVoiceId(value: unknown): string | undefined {
+  const data = asRecord(asRecord(value).data)
+  if (typeof data.voiceId === "string") return data.voiceId
+  if (typeof data.voice_id === "string") return data.voice_id
+  return undefined
 }
 
 function collectLinks(value: unknown, links: Array<{ label: string; url: string }> = []) {
@@ -114,11 +169,16 @@ function sanitizeEngineResponse(result: EngineResponse, workflowId?: string) {
   return {
     ok: result.ok,
     status: result.status,
+    state: extractState(result.data),
     error: result.ok ? undefined : "Music workflow request failed.",
     workflow: workflowId ? publicWorkflow(workflowId) : undefined,
     taskId: extractTaskId(result.data),
     tracks,
     links,
+    texts: extractTexts(result.data),
+    personaId: extractPersonaId(result.data),
+    phrase: extractPhrase(result.data),
+    voiceId: extractVoiceId(result.data),
   }
 }
 

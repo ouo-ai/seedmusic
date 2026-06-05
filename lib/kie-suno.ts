@@ -145,6 +145,14 @@ export const SUNO_WORKFLOWS = [
     path: "/generate/generate-persona",
   },
   {
+    id: "voice-validate",
+    label: "Voice Validate",
+    group: "Voice",
+    description: "Submit a source recording to obtain a verification phrase.",
+    path: "/voice/validate",
+    detailPath: "/voice/validate-info",
+  },
+  {
     id: "generate-voice",
     label: "Generate Voice",
     group: "Voice",
@@ -196,6 +204,10 @@ export type KieSubmitInput = {
   description?: string
   vocalStart?: number
   vocalEnd?: number
+  voiceUrl?: string
+  vocalStartS?: number
+  vocalEndS?: number
+  language?: string
   verifyUrl?: string
   voiceName?: string
   singerSkillLevel?: "beginner" | "intermediate" | "advanced" | "professional" | ""
@@ -479,6 +491,16 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         style: cleanString(input.style),
       })
       requireFields(payload, ["taskId", "audioId", "name", "description"])
+      break
+    case "voice-validate":
+      payload = cleanPayload({
+        voiceUrl: cleanString(input.voiceUrl) || cleanString(input.uploadUrl),
+        vocalStartS: cleanNumber(input.vocalStartS),
+        vocalEndS: cleanNumber(input.vocalEndS),
+        language: cleanString(input.language),
+        callBackUrl: callbackUrl(input, siteUrl),
+      })
+      requireFields(payload, ["voiceUrl", "vocalStartS", "vocalEndS"])
       break
     case "generate-voice":
       payload = cleanPayload({
