@@ -60,7 +60,6 @@ const STYLE_WORKFLOWS = new Set<MusicWorkflowId>([
   "generate-voice",
 ])
 const GENRE_MOOD_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "extend", "upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup"])
-const LENGTH_NOTE_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "extend", "upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup"])
 const VOCAL_MODE_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "upload-cover", "add-vocals", "mashup"])
 const POLLABLE_WORKFLOWS = new Set<string>(MUSIC_WORKFLOWS.filter((workflow) => workflow.pollable).map((workflow) => workflow.id))
 
@@ -237,16 +236,6 @@ function getPromptLimit(workflowId: MusicWorkflowId, model: string) {
   return 5000
 }
 
-function getLengthNote(model: string) {
-  if (model === "V3_5" || model === "V4") {
-    return "KIE Suno does not expose a fixed duration parameter. This model controls exact length internally, with a documented max around 4 minutes."
-  }
-  if (["V4_5", "V4_5PLUS", "V4_5ALL", "V5"].includes(model)) {
-    return "KIE Suno does not expose a fixed duration parameter. This model controls exact length internally, with a documented max around 8 minutes."
-  }
-  return "KIE Suno does not expose a fixed duration parameter for this model. The returned track duration is available after generation."
-}
-
 export default function MusicPromptComposer() {
   const [prompt, setPrompt] = useState("")
   const [genre, setGenre] = useState<Genre>("Electronic")
@@ -301,7 +290,6 @@ export default function MusicPromptComposer() {
     "convert-wav",
     "generate-persona",
   ].includes(workflowId)
-  const showsLengthNote = LENGTH_NOTE_WORKFLOWS.has(workflowId)
   const showsVocalControl = VOCAL_MODE_WORKFLOWS.has(workflowId)
   const showsTitleField = TITLE_WORKFLOWS.has(workflowId)
   const showsStyleField = STYLE_WORKFLOWS.has(workflowId)
@@ -477,15 +465,9 @@ export default function MusicPromptComposer() {
               </div>
             )}
 
-            {(showsVocalControl || showsLengthNote) && (
+            {showsVocalControl && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {showsVocalControl && <PillSelector label="Vocals" options={["Vocals", "Instrumental"] as VocalMode[]} value={vocals} onChange={setVocals} />}
-                {showsLengthNote && (
-                <div className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-[#FAFAF9] px-3 py-2.5">
-                  <div className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">Length</div>
-                  <div className="mt-1 text-[11px] leading-4 text-[#857870] font-sans">{getLengthNote(model)}</div>
-                </div>
-                )}
+                <PillSelector label="Vocals" options={["Vocals", "Instrumental"] as VocalMode[]} value={vocals} onChange={setVocals} />
               </div>
             )}
 
