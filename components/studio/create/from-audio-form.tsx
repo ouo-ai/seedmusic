@@ -26,7 +26,7 @@ export function FromAudioForm({ onCreated }: { onCreated: (id: string) => void }
   const [title, setTitle] = useState("")
   const [vocals, setVocals] = useState<"Vocals" | "Instrumental">("Vocals")
   const [continueAt, setContinueAt] = useState("")
-  const [model, setModel] = useState("V5_5")
+  const [model, setModel] = useState("V5")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 

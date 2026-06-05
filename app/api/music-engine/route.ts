@@ -141,6 +141,39 @@ function extractVoiceId(value: unknown): string | undefined {
   return undefined
 }
 
+function extractEngineCode(value: unknown): number | undefined {
+  const code = asRecord(value).code
+  if (typeof code === "number" && Number.isFinite(code)) return code
+  if (typeof code === "string" && /^\d+$/.test(code)) return Number(code)
+  return undefined
+}
+
+function firstMessage(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value !== "string") continue
+    const message = value.trim()
+    if (message && !/^success$/i.test(message)) return message
+  }
+  return undefined
+}
+
+function extractEngineError(value: unknown): string | undefined {
+  const root = asRecord(value)
+  const data = asRecord(root.data)
+  const response = asRecord(data.response)
+  return firstMessage(
+    data.errorMessage,
+    data.error,
+    data.message,
+    response.errorMessage,
+    response.error,
+    response.message,
+    root.error,
+    root.message,
+    root.msg,
+  )
+}
+
 function collectLinks(value: unknown, links: Array<{ label: string; url: string }> = []) {
   if (!value || links.length >= 8) return links
   if (typeof value === "string" && /^https?:\/\//i.test(value)) {
@@ -161,24 +194,39 @@ function publicWorkflow(workflowId: string) {
   return MUSIC_WORKFLOWS.find((workflow) => workflow.id === workflowId) || null
 }
 
-function sanitizeEngineResponse(result: EngineResponse, workflowId?: string) {
+function sanitizeEngineResponse(result: EngineResponse, workflowId?: string, options: { expectAsyncResult?: boolean } = {}) {
   const tracks = extractTracks(result.data)
   const trackUrls = new Set(tracks.map((track) => track.audioUrl).filter(Boolean))
   const links = collectLinks(result.data).filter((link) => !trackUrls.has(link.url)).slice(0, 6)
+  const taskId = extractTaskId(result.data)
+  const texts = extractTexts(result.data)
+  const personaId = extractPersonaId(result.data)
+  const phrase = extractPhrase(result.data)
+  const voiceId = extractVoiceId(result.data)
+  const hasResultPayload = Boolean(taskId || tracks.length || links.length || texts.length || personaId || phrase || voiceId)
+  const engineCode = extractEngineCode(result.data)
+  const engineFailed = engineCode !== undefined && engineCode !== 200 && !hasResultPayload
+  const missingExpectedAsyncResult = Boolean(options.expectAsyncResult && !hasResultPayload)
+  const ok = result.ok && !engineFailed && !missingExpectedAsyncResult
+  const error =
+    ok
+      ? undefined
+      : extractEngineError(result.data) ||
+        (missingExpectedAsyncResult ? "No task ID returned by music engine." : "Music workflow request failed.")
 
   return {
-    ok: result.ok,
+    ok,
     status: result.status,
-    state: extractState(result.data),
-    error: result.ok ? undefined : "Music workflow request failed.",
+    state: ok ? extractState(result.data) : "failed",
+    error,
     workflow: workflowId ? publicWorkflow(workflowId) : undefined,
-    taskId: extractTaskId(result.data),
+    taskId,
     tracks,
     links,
-    texts: extractTexts(result.data),
-    personaId: extractPersonaId(result.data),
-    phrase: extractPhrase(result.data),
-    voiceId: extractVoiceId(result.data),
+    texts,
+    personaId,
+    phrase,
+    voiceId,
   }
 }
 
@@ -218,7 +266,8 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(config.payload),
     })
 
-    return json(sanitizeEngineResponse(result, config.workflow.id), result.ok ? 200 : result.status)
+    const sanitized = sanitizeEngineResponse(result, config.workflow.id, { expectAsyncResult: "detailPath" in config.workflow })
+    return json(sanitized, sanitized.ok ? 200 : result.status)
   } catch (error) {
     return json({ ok: false, error: error instanceof Error ? error.message : "Invalid music workflow request." }, 400)
   }

@@ -15,8 +15,8 @@ export const MOODS: Mood[] = ["Energetic", "Chill", "Melancholic", "Uplifting", 
 
 /** All model versions (available to Song and other general workflows). */
 export const SONG_MODELS = MUSIC_MODEL_VERSIONS
-/** Sounds only supports V5 / V5_5 (official constraint). */
-export const SOUNDS_MODELS = ["V5_5", "V5"] as const
+/** Sounds currently supports V5. */
+export const SOUNDS_MODELS = ["V5"] as const
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const
 

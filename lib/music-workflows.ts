@@ -1,4 +1,4 @@
-export const MUSIC_MODEL_VERSIONS = ["V5_5", "V5", "V4_5ALL", "V4_5PLUS", "V4_5", "V4", "V3_5"] as const
+export const MUSIC_MODEL_VERSIONS = ["V5", "V4_5ALL", "V4_5PLUS", "V4_5", "V4", "V3_5"] as const
 
 export type MusicModelVersion = (typeof MUSIC_MODEL_VERSIONS)[number]
 

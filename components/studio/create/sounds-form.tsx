@@ -14,7 +14,7 @@ import { TextField } from "../fields/text-field"
 export function SoundsForm({ onCreated }: { onCreated: (id: string) => void }) {
   const { run } = useEngineRunner()
   const [prompt, setPrompt] = useState("")
-  const [model, setModel] = useState<string>("V5_5")
+  const [model, setModel] = useState<string>("V5")
   const [loop, setLoop] = useState(false)
   const [tempo, setTempo] = useState("")
   const [soundKey, setSoundKey] = useState("")
@@ -76,7 +76,7 @@ export function SoundsForm({ onCreated }: { onCreated: (id: string) => void }) {
         </SelectField>
       </div>
 
-      <SelectField label="Model (Sounds supports V5 / V5.5)" value={model} onChange={setModel}>
+      <SelectField label="Model" value={model} onChange={setModel}>
         {SOUNDS_MODELS.map((version) => (
           <option key={version} value={version}>
             {version}

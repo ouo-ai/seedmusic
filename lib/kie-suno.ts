@@ -1,4 +1,4 @@
-export const SUNO_MODEL_VERSIONS = ["V5_5", "V5", "V4_5ALL", "V4_5PLUS", "V4_5", "V4", "V3_5"] as const
+export const SUNO_MODEL_VERSIONS = ["V5", "V4_5ALL", "V4_5PLUS", "V4_5", "V4", "V3_5"] as const
 
 export type SunoModelVersion = (typeof SUNO_MODEL_VERSIONS)[number]
 
@@ -297,7 +297,7 @@ function callbackUrl(input: KieSubmitInput, siteUrl: string) {
 }
 
 function baseMusicPayload(input: KieSubmitInput, siteUrl: string) {
-  const model = MODEL_SET.has(String(input.model)) ? input.model : "V5_5"
+  const model = MODEL_SET.has(String(input.model)) ? input.model : "V5"
   return cleanPayload({
     prompt: cleanString(input.prompt),
     customMode: input.customMode ?? true,
@@ -388,7 +388,7 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         tags: cleanString(input.tags) || cleanString(input.style),
         negativeTags: cleanString(input.negativeTags),
         callBackUrl: callbackUrl(input, siteUrl),
-        model: MODEL_SET.has(String(input.model)) ? input.model : "V5_5",
+        model: MODEL_SET.has(String(input.model)) ? input.model : "V5",
         vocalGender: cleanString(input.vocalGender),
         styleWeight: cleanRangeNumber(input.styleWeight, "styleWeight", 0, 1),
         weirdnessConstraint: cleanRangeNumber(input.weirdnessConstraint, "weirdnessConstraint", 0, 1),
@@ -404,7 +404,7 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         style: cleanString(input.style),
         uploadUrl: cleanString(input.uploadUrl),
         callBackUrl: callbackUrl(input, siteUrl),
-        model: MODEL_SET.has(String(input.model)) ? input.model : "V5_5",
+        model: MODEL_SET.has(String(input.model)) ? input.model : "V5",
         vocalGender: cleanString(input.vocalGender),
         styleWeight: cleanRangeNumber(input.styleWeight, "styleWeight", 0, 1),
         weirdnessConstraint: cleanRangeNumber(input.weirdnessConstraint, "weirdnessConstraint", 0, 1),
@@ -532,13 +532,34 @@ export function getKieDetailPath(workflowId: string) {
 }
 
 export function extractTaskId(data: unknown) {
-  if (!data || typeof data !== "object") return null
-  const root = data as { data?: unknown; taskId?: unknown }
-  if (typeof root.taskId === "string") return root.taskId
-  if (root.data && typeof root.data === "object") {
-    const nested = root.data as { taskId?: unknown; task_id?: unknown }
-    if (typeof nested.taskId === "string") return nested.taskId
-    if (typeof nested.task_id === "string") return nested.task_id
+  return findTaskId(data)
+}
+
+const TASK_ID_FIELDS = new Set(["taskId", "task_id"])
+
+function findTaskId(value: unknown, depth = 0): string | null {
+  if (!value || depth > 4) return null
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const taskId = findTaskId(item, depth + 1)
+      if (taskId) return taskId
+    }
+    return null
   }
+
+  if (typeof value !== "object") return null
+
+  for (const [key, nested] of Object.entries(value)) {
+    if (TASK_ID_FIELDS.has(key) && typeof nested === "string" && nested.trim()) {
+      return nested.trim()
+    }
+  }
+
+  for (const nested of Object.values(value)) {
+    const taskId = findTaskId(nested, depth + 1)
+    if (taskId) return taskId
+  }
+
   return null
 }
