@@ -75,7 +75,7 @@ export default function FooterSection() {
                 Prompt examples
               </div>
               <div className="text-[#49423D] text-sm font-normal leading-5 font-sans cursor-pointer hover:text-[#37322F] transition-colors">
-                Studio preview
+                Studio
               </div>
             </div>
           </div>

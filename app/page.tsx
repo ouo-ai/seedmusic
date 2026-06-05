@@ -66,7 +66,7 @@ const HERO_CARDS = [
   },
   {
     title: "Lyric to song",
-    description: "Paste lyrics, choose a style, and preview arrangement directions.",
+    description: "Paste lyrics, choose a style, and generate arrangement directions.",
   },
   {
     title: "Reference & refine",
@@ -239,7 +239,7 @@ export default function LandingPage() {
                     <div className="text-[#2A2420] text-xs md:text-[13px] font-medium leading-5 font-sans">Sign in</div>
                   </div>
                   <div className="px-3 md:px-[14px] py-1 sm:py-[6px] bg-[#2A2420] shadow-[0px_0px_0px_2px_rgba(255,255,255,0.10)_inset] overflow-hidden rounded-full flex justify-center items-center cursor-pointer">
-                    <div className="text-white text-xs md:text-[13px] font-medium leading-5 font-sans whitespace-nowrap">Preview</div>
+                    <div className="text-white text-xs md:text-[13px] font-medium leading-5 font-sans whitespace-nowrap">Studio</div>
                   </div>
                 </div>
               </div>
@@ -273,7 +273,7 @@ export default function LandingPage() {
                 {/* CTAs */}
                 <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
                   <Link href="/studio" className="h-10 sm:h-11 px-7 sm:px-9 py-2 bg-[#2A2420] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#1a1512] transition-colors">
-                    <span className="text-white text-sm font-medium leading-5 font-sans">Open studio preview</span>
+                    <span className="text-white text-sm font-medium leading-5 font-sans">Open Studio</span>
                   </Link>
                   <div className="h-10 sm:h-11 px-7 sm:px-9 py-2 bg-white border border-[rgba(42,36,32,0.14)] shadow-[0px_1px_2px_rgba(42,36,32,0.06)] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#f0ede9] transition-colors">
                     <span className="text-[#2A2420] text-sm font-medium leading-5 font-sans">See prompt examples</span>

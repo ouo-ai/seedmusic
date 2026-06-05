@@ -16,7 +16,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "Are Seed Music, Seed-Music, and seedmusic different?",
     answer:
-      "No. Seed Music is the primary keyword for this page, while Seed-Music and seedmusic are alternate spellings people may use when searching for the same AI music workflow preview.",
+      "No. Seed Music is the primary keyword for this page, while Seed-Music and seedmusic are alternate spellings people may use when searching for the same AI music workflow.",
   },
   {
     question: "Can I use Seed Music for commercial projects?",

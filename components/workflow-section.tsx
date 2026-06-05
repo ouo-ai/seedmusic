@@ -53,7 +53,7 @@ function PromptChip({ text }: { text: string }) {
   )
 }
 
-// Mini waveform preview
+// Mini waveform
 function MiniWave({ color }: { color: string }) {
   return (
     <div className="flex items-end gap-[2px] h-8">
@@ -99,9 +99,9 @@ const STEPS = [
   },
   {
     step: "2",
-    title: "Generate & preview",
+    title: "Generate & compare",
     description:
-      "Preview multiple arrangement directions in the browser and compare tempo, vocal, and instrumentation choices before committing.",
+      "Generate multiple arrangement directions and compare tempo, vocal, and instrumentation choices before committing.",
     accent: "#1A9E8F",
     detail: <MiniWave color="#1A9E8F" />,
   },

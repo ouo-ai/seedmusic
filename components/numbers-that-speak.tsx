@@ -12,7 +12,7 @@ interface NumbersThatSpeakProps {
 }
 
 /**
- * Numbers that speak - SeedMusic studio preview with layered track cards
+ * Numbers that speak - SeedMusic studio with layered track cards
  * Generated from Figma via MCP with exact measurements (482×300px)
  * Single-file component following the v0-ready pattern used in this repo.
  */
@@ -61,7 +61,7 @@ const NumbersThatSpeak: React.FC<NumbersThatSpeakProps> = ({
         } as React.CSSProperties
       }
       role="img"
-      aria-label="SeedMusic studio preview showing track brief cards"
+      aria-label="SeedMusic studio showing track brief cards"
       data-name="Numbers that speak"
       data-node-id="454:5856"
     >

@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og"
 
 export const runtime = "edge"
-export const alt = "Seed Music AI generator studio preview"
+export const alt = "Seed Music AI generator studio"
 export const size = {
   width: 1200,
   height: 630,
@@ -46,7 +46,7 @@ export default function Image() {
             AI music generator for Seed-Music workflows
           </div>
           <div style={{ fontSize: 28, lineHeight: 1.35, color: "#605A57", maxWidth: 850 }}>
-            Explore Seed Music lyric drafts, style controls, audio-reference previews, and track-ready creative briefs.
+            Explore Seed Music lyric drafts, style controls, audio references, and track-ready creative briefs.
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10, color: "#1A9E8F", fontSize: 24 }}>

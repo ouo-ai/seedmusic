@@ -133,7 +133,7 @@ export default function DocumentationSection() {
             text="Core workflows"
           />
           <div className="self-stretch text-center text-[#2A2420] text-3xl md:text-5xl font-semibold leading-tight md:leading-[60px] font-sans tracking-tight text-balance">
-            Every music idea, one studio preview
+            Every music idea, one studio
           </div>
           <div className="self-stretch text-center text-[#857870] text-base font-normal leading-7 font-sans">
             From a single sentence to a track brief, Seed Music helps organize prompts, lyrics, references, and style choices before final production.

@@ -14,7 +14,7 @@ const faqItems = [
   {
     question: "Are Seed Music, Seed-Music, and seedmusic the same page?",
     answer:
-      "Yes. Seed Music is the primary keyword for this page, while Seed-Music and seedmusic are alternate spellings used to find the same AI music workflow preview.",
+      "Yes. Seed Music is the primary keyword for this page, while Seed-Music and seedmusic are alternate spellings used to find the same AI music workflow.",
   },
   {
     question: "Can I use Seed Music for commercial projects?",
@@ -85,7 +85,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Seed Music AI Generator | Seed-Music Studio Preview",
+  title: "Seed Music AI Generator | Seed-Music Studio",
   description:
     "Seed Music helps creators run AI music workflows: prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
   keywords: [
@@ -105,7 +105,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: siteUrl,
-    title: "Seed Music AI Generator | Seed-Music Studio Preview",
+    title: "Seed Music AI Generator | Seed-Music Studio",
     description:
       "Run Seed Music workflows for prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
     siteName: "Seed Music",
@@ -114,13 +114,13 @@ export const metadata: Metadata = {
         url: "/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "Seed Music AI generator studio preview",
+        alt: "Seed Music AI generator studio",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Seed Music AI Generator | Seed-Music Studio Preview",
+    title: "Seed Music AI Generator | Seed-Music Studio",
     description:
       "Run Seed Music AI workflows for prompts, lyrics, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
     images: ["/opengraph-image"],

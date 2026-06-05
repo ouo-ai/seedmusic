@@ -98,11 +98,11 @@ export default function PricingSection() {
                   <div className="text-[#857870] text-sm font-medium font-sans">forever free</div>
                 </div>
                 <div className="self-stretch px-4 py-[10px] relative bg-[#2A2420] shadow-[0px_2px_4px_rgba(42,36,32,0.12)] overflow-hidden rounded-[99px] flex justify-center items-center cursor-pointer hover:bg-[#1a1512] transition-colors">
-                  <div className="text-[#FBFAF9] text-[13px] font-medium leading-5 font-sans">Open preview</div>
+                  <div className="text-[#FBFAF9] text-[13px] font-medium leading-5 font-sans">Open Studio</div>
                 </div>
               </div>
               <div className="self-stretch flex flex-col gap-2">
-                {["Prompt composer preview", "Lyric and reference modes", "Genre and mood controls", "Mock browser playback", "Launch checklist"].map((f) => (
+                {["Prompt composer", "Lyric and reference modes", "Genre and mood controls", "In-browser playback", "Launch checklist"].map((f) => (
                   <div key={f} className="flex justify-start items-center gap-3">
                     <div className="w-4 h-4 flex items-center justify-center"><CheckIcon color="#9CA3AF" /></div>
                     <div className="text-[rgba(42,36,32,0.70)] text-[12.5px] font-normal leading-5 font-sans">{f}</div>
