@@ -1,5 +1,6 @@
 "use client"
 
+import { ChevronDown } from "lucide-react"
 import { useMemo, useState } from "react"
 
 import { MUSIC_MODEL_VERSIONS, MUSIC_WORKFLOWS, type MusicWorkflowId } from "@/lib/music-workflows"
@@ -144,13 +145,16 @@ function SelectField({
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">{label}</span>
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        className="h-10 rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 text-[#2A2420] text-sm font-sans focus:outline-none focus:border-[rgba(42,36,32,0.36)]"
-      >
-        {children}
-      </select>
+      <span className="relative">
+        <select
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-10 w-full appearance-none rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 pr-12 text-[#2A2420] text-sm font-sans focus:outline-none focus:border-[rgba(42,36,32,0.36)]"
+        >
+          {children}
+        </select>
+        <ChevronDown className="pointer-events-none absolute right-5 top-1/2 size-4 -translate-y-1/2 text-[#2A2420]" strokeWidth={1.8} aria-hidden="true" />
+      </span>
     </label>
   )
 }
