@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 
-import { SUNO_MODEL_VERSIONS, SUNO_WORKFLOWS, type SunoWorkflowId } from "@/lib/kie-suno"
+import { MUSIC_MODEL_VERSIONS, MUSIC_WORKFLOWS, type MusicWorkflowId } from "@/lib/music-workflows"
 
 type Genre = "Pop" | "Hip-Hop" | "Electronic" | "Rock" | "Jazz" | "Classical" | "Folk" | "R&B"
 type Mood = "Energetic" | "Chill" | "Melancholic" | "Uplifting" | "Dark" | "Romantic"
@@ -13,9 +13,10 @@ type Phase = "idle" | "submitting" | "created" | "ready" | "error"
 type ApiResult = {
   ok?: boolean
   status?: number
-  data?: unknown
   error?: string
   taskId?: string | null
+  tracks?: TrackResult[]
+  links?: LinkResult[]
 }
 
 type LinkResult = {
@@ -33,7 +34,7 @@ type TrackResult = {
 const GENRES: Genre[] = ["Pop", "Hip-Hop", "Electronic", "Rock", "Jazz", "Classical", "Folk", "R&B"]
 const MOODS: Mood[] = ["Energetic", "Chill", "Melancholic", "Uplifting", "Dark", "Romantic"]
 const DURATIONS: Duration[] = ["0:30", "1:00", "2:00", "3:00"]
-const POLLABLE_WORKFLOWS = new Set<string>(SUNO_WORKFLOWS.filter((workflow) => "detailPath" in workflow).map((workflow) => workflow.id))
+const POLLABLE_WORKFLOWS = new Set<string>(MUSIC_WORKFLOWS.filter((workflow) => workflow.pollable).map((workflow) => workflow.id))
 
 const EXAMPLE_PROMPTS = [
   "A driving synthwave track for a late-night city montage, pulsing bass, neon nostalgia",
@@ -154,67 +155,14 @@ function TextField({
   )
 }
 
-function asRecord(value: unknown): Record<string, unknown> {
-  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
-}
-
 function extractTaskId(result: ApiResult | null) {
   if (!result) return ""
   if (typeof result.taskId === "string") return result.taskId
-  const data = asRecord(result.data)
-  if (typeof data.taskId === "string") return data.taskId
-  const nested = asRecord(data.data)
-  if (typeof nested.taskId === "string") return nested.taskId
-  if (typeof nested.task_id === "string") return nested.task_id
   return ""
 }
 
 function extractTracks(result: ApiResult | null): TrackResult[] {
-  if (!result) return []
-  const root = asRecord(result.data)
-  const data = asRecord(root.data)
-  const response = asRecord(data.response)
-  const candidates = [response.sunoData, response.data, data.sunoData, data.items, data.audio_info].filter(Array.isArray)
-  const rows = (candidates[0] || []) as Array<Record<string, unknown>>
-
-  return rows.slice(0, 6).map((row, index) => ({
-    id: String(row.id || row.audio_id || row.audioId || `${index}`),
-    title: String(row.title || row.name || `Seed Music result ${index + 1}`),
-    meta: [row.modelName || row.model, row.duration || row.duration_seconds, row.tags || row.style].filter(Boolean).join(" · "),
-    audioUrl:
-      typeof row.audioUrl === "string"
-        ? row.audioUrl
-        : typeof row.audio_url === "string"
-          ? row.audio_url
-          : typeof row.streamAudioUrl === "string"
-            ? row.streamAudioUrl
-            : typeof row.stream_audio_url === "string"
-              ? row.stream_audio_url
-              : undefined,
-  }))
-}
-
-function collectLinks(value: unknown, links: LinkResult[] = [], path = "result") {
-  if (!value || links.length >= 8) return links
-  if (typeof value === "string" && /^https?:\/\//i.test(value)) {
-    links.push({ label: path.replace(/\./g, " / "), url: value })
-    return links
-  }
-  if (Array.isArray(value)) {
-    value.forEach((item, index) => collectLinks(item, links, `${path}.${index + 1}`))
-    return links
-  }
-  if (typeof value === "object") {
-    for (const [key, item] of Object.entries(value)) {
-      collectLinks(item, links, `${path}.${key}`)
-    }
-  }
-  return links
-}
-
-function readableJson(value: unknown) {
-  if (!value) return ""
-  return JSON.stringify(value, null, 2)
+  return result?.tracks || []
 }
 
 export default function MusicPromptComposer() {
@@ -223,7 +171,7 @@ export default function MusicPromptComposer() {
   const [mood, setMood] = useState<Mood>("Energetic")
   const [vocals, setVocals] = useState<VocalMode>("Instrumental")
   const [duration, setDuration] = useState<Duration>("2:00")
-  const [workflowId, setWorkflowId] = useState<SunoWorkflowId>("generate")
+  const [workflowId, setWorkflowId] = useState<MusicWorkflowId>("generate")
   const [model, setModel] = useState("V5_5")
   const [title, setTitle] = useState("Seed Music draft")
   const [style, setStyle] = useState("Electronic, energetic, polished, cinematic")
@@ -237,10 +185,10 @@ export default function MusicPromptComposer() {
   const [error, setError] = useState("")
   const [playingTrack, setPlayingTrack] = useState<number | null>(null)
 
-  const workflow = useMemo(() => SUNO_WORKFLOWS.find((item) => item.id === workflowId) || SUNO_WORKFLOWS[0], [workflowId])
+  const workflow = useMemo(() => MUSIC_WORKFLOWS.find((item) => item.id === workflowId) || MUSIC_WORKFLOWS[0], [workflowId])
   const charLeft = 5000 - prompt.length
   const tracks = extractTracks(result)
-  const links = collectLinks(result?.data).filter((link) => !tracks.some((track) => track.audioUrl === link.url)).slice(0, 5)
+  const links = (result?.links || []).filter((link) => !tracks.some((track) => track.audioUrl === link.url)).slice(0, 5)
   const activeTaskId = taskId || extractTaskId(result)
   const canPoll = POLLABLE_WORKFLOWS.has(workflowId) && Boolean(activeTaskId)
   const needsUpload = ["upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup", "generate-voice"].includes(workflowId)
@@ -312,7 +260,7 @@ export default function MusicPromptComposer() {
     setPlayingTrack(null)
 
     try {
-      const response = await fetch("/api/kie-suno", {
+      const response = await fetch("/api/music-engine", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(buildPayload()),
@@ -322,11 +270,11 @@ export default function MusicPromptComposer() {
       const createdTaskId = extractTaskId(data)
       if (createdTaskId) setTaskId(createdTaskId)
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `Kie.ai returned HTTP ${response.status}`)
+        throw new Error(data.error || `Music engine returned HTTP ${response.status}`)
       }
       setPhase(createdTaskId ? "created" : "ready")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kie.ai request failed.")
+      setError(err instanceof Error ? err.message : "Music engine request failed.")
       setPhase("error")
     }
   }
@@ -336,15 +284,15 @@ export default function MusicPromptComposer() {
     setPhase("submitting")
     setError("")
     try {
-      const response = await fetch(`/api/kie-suno?workflow=${encodeURIComponent(workflowId)}&taskId=${encodeURIComponent(activeTaskId)}`)
+      const response = await fetch(`/api/music-engine?workflow=${encodeURIComponent(workflowId)}&taskId=${encodeURIComponent(activeTaskId)}`)
       const data = (await response.json()) as ApiResult
       setResult(data)
       if (!response.ok || data.ok === false) {
-        throw new Error(data.error || `Kie.ai returned HTTP ${response.status}`)
+        throw new Error(data.error || `Music engine returned HTTP ${response.status}`)
       }
       setPhase("ready")
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Kie.ai status request failed.")
+      setError(err instanceof Error ? err.message : "Music engine status request failed.")
       setPhase("error")
     }
   }
@@ -358,7 +306,7 @@ export default function MusicPromptComposer() {
             <circle cx="8" cy="8" r="2.5" fill="#E8541A" />
           </svg>
           <span className="text-[#2A2420] text-sm font-semibold font-sans">SeedMusic Studio</span>
-          <span className="px-2 py-0.5 bg-[rgba(26,158,143,0.10)] text-[#1A9E8F] text-[11px] font-medium rounded-full font-sans">Kie.ai live API</span>
+          <span className="px-2 py-0.5 bg-[rgba(26,158,143,0.10)] text-[#1A9E8F] text-[11px] font-medium rounded-full font-sans">Live music engine</span>
         </div>
         <div className="flex items-center gap-2 text-[rgba(42,36,32,0.50)] text-xs font-sans">
           <span className="hidden sm:inline">{workflow.group}</span>
@@ -369,10 +317,10 @@ export default function MusicPromptComposer() {
       <div className="flex flex-col md:flex-row">
         <div className="flex-1 md:border-r border-[rgba(42,36,32,0.08)] flex flex-col">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 border-b border-[rgba(42,36,32,0.08)]">
-            <SelectField label="Model Type" value={workflowId} onChange={(value) => setWorkflowId(value as SunoWorkflowId)}>
+            <SelectField label="Model Type" value={workflowId} onChange={(value) => setWorkflowId(value as MusicWorkflowId)}>
               {["Create", "Edit", "Upload", "Post", "Voice"].map((group) => (
                 <optgroup key={group} label={group}>
-                  {SUNO_WORKFLOWS.filter((item) => item.group === group).map((item) => (
+                  {MUSIC_WORKFLOWS.filter((item) => item.group === group).map((item) => (
                     <option key={item.id} value={item.id}>
                       {item.label}
                     </option>
@@ -381,7 +329,7 @@ export default function MusicPromptComposer() {
               ))}
             </SelectField>
             <SelectField label="Model Version" value={model} onChange={setModel}>
-              {SUNO_MODEL_VERSIONS.map((version) => (
+              {MUSIC_MODEL_VERSIONS.map((version) => (
                 <option key={version} value={version}>
                   {version}
                 </option>
@@ -399,7 +347,7 @@ export default function MusicPromptComposer() {
               <textarea
                 value={prompt}
                 onChange={(event) => setPrompt(event.target.value.slice(0, 5000))}
-                placeholder="Describe the music, lyrics, edit, voice, or post-processing request for the selected Kie.ai Suno workflow..."
+                placeholder="Describe the music, lyrics, edit, voice, or post-processing request for the selected workflow..."
                 rows={5}
                 className="w-full resize-none rounded-xl border border-[rgba(42,36,32,0.14)] bg-[#FAFAF9] px-4 py-3 text-[#2A2420] text-sm font-sans placeholder:text-[rgba(42,36,32,0.35)] focus:outline-none focus:border-[rgba(42,36,32,0.36)] leading-relaxed"
               />
@@ -450,7 +398,7 @@ export default function MusicPromptComposer() {
 
             {(needsTask || needsAudioId) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {needsTask && <TextField label="Task ID" value={taskId} onChange={setTaskId} placeholder="Kie taskId" />}
+                {needsTask && <TextField label="Task ID" value={taskId} onChange={setTaskId} placeholder="Task ID" />}
                 {needsAudioId && <TextField label="Audio ID" value={audioId} onChange={setAudioId} placeholder="Generated audio id" />}
               </div>
             )}
@@ -471,10 +419,10 @@ export default function MusicPromptComposer() {
                     <circle cx="7" cy="7" r="5.5" stroke="rgba(42,36,32,0.3)" strokeWidth="2" />
                     <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="#E8541A" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  Sending to Kie.ai...
+                  Sending to music engine...
                 </>
               ) : (
-                "Run Kie.ai Suno workflow"
+                "Run Seed Music workflow"
               )}
             </button>
           </div>
@@ -484,7 +432,7 @@ export default function MusicPromptComposer() {
           <div className="px-5 py-4 border-b border-[rgba(42,36,32,0.08)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">
-                {phase === "idle" ? "API output" : phase === "submitting" ? "Processing" : phase === "error" ? "Error" : "Kie.ai result"}
+                {phase === "idle" ? "Studio output" : phase === "submitting" ? "Processing" : phase === "error" ? "Error" : "Seed Music result"}
               </span>
               {activeTaskId && (
                 <button
@@ -563,24 +511,21 @@ export default function MusicPromptComposer() {
                 </div>
                 <div>
                   <div className="text-[#2A2420] text-sm font-medium font-sans">No task yet</div>
-                  <div className="text-[rgba(42,36,32,0.50)] text-xs font-sans mt-0.5">Submit a Kie.ai Suno workflow to start</div>
+                  <div className="text-[rgba(42,36,32,0.50)] text-xs font-sans mt-0.5">Submit a Seed Music workflow to start</div>
                 </div>
               </div>
             )}
 
-            {result && (
-              <details className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-[#FAFAF9] px-4 py-3">
-                <summary className="cursor-pointer text-[#2A2420] text-xs font-medium font-sans">Raw API response</summary>
-                <pre className="mt-3 max-h-[220px] overflow-auto text-[11px] leading-5 text-[rgba(42,36,32,0.70)] font-mono whitespace-pre-wrap">
-                  {readableJson(result)}
-                </pre>
-              </details>
+            {result && tracks.length === 0 && links.length === 0 && !error && (
+              <div className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-[#FAFAF9] px-4 py-3 text-[#857870] text-xs leading-5 font-sans">
+                Task submitted. Use the status button to check for generated media.
+              </div>
             )}
           </div>
 
           <div className="px-5 py-3 border-t border-[rgba(42,36,32,0.08)]">
             <span className="text-[11px] text-[rgba(42,36,32,0.45)] font-sans">
-              Kie.ai tasks may need polling after creation. Provider usage rights, credits, and moderation rules apply.
+              Music tasks may need polling after creation. Usage rights, credits, and moderation rules apply.
             </span>
           </div>
         </div>

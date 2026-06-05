@@ -35,7 +35,7 @@ const TESTIMONIALS = [
   },
   {
     quote:
-      "A brand studio can compare several sonic directions before involving a composer, producer, or final generation provider.",
+      "A brand studio can compare several sonic directions before involving a composer, producer, or final production team.",
     name: "Brand studio",
     role: "Campaign music direction",
     avatar: "BS",

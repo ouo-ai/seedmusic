@@ -12,7 +12,7 @@ export function FeatureCards() {
     },
     {
       title: "Data to insights in the minutes",
-      description: "Review export needs, usage terms,\nand provider integration.",
+      description: "Review export needs, usage terms,\nand production handoff.",
       highlighted: false,
     },
   ]

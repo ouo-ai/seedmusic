@@ -250,7 +250,7 @@ function requireFields(payload: Record<string, unknown>, fields: string[]) {
 
 function callbackUrl(input: KieSubmitInput, siteUrl: string) {
   if (cleanString(input.callBackUrl)) return cleanString(input.callBackUrl)
-  return new URL("/api/kie-suno/callback", siteUrl).toString()
+  return new URL("/api/music-engine/callback", siteUrl).toString()
 }
 
 function baseMusicPayload(input: KieSubmitInput, siteUrl: string) {

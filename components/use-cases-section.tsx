@@ -148,7 +148,7 @@ const USE_CASES = [
       </svg>
     ),
     title: "Games & interactive",
-    body: "Plan adaptive soundtrack beds and ambient loop requirements for the audio engine or provider you connect.",
+    body: "Plan adaptive soundtrack beds and ambient loop requirements for the audio engine you connect.",
     accent: "#E8A44A",
   },
 ]

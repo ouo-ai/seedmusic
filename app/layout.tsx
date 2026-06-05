@@ -9,7 +9,7 @@ const faqItems = [
   {
     question: "What is Seed Music and how does it work?",
     answer:
-      "Seed Music is an AI music generator landing page with a server-side Kie.ai Suno API integration for prompt-to-song, lyric-to-song, upload, voice, stems, MIDI, WAV, and music video workflows.",
+      "Seed Music is an AI music generator studio for prompt-to-song, lyric-to-song, upload, voice, stems, MIDI, WAV, and music video workflows.",
   },
   {
     question: "Are Seed Music, Seed-Music, and seedmusic the same page?",
@@ -19,7 +19,7 @@ const faqItems = [
   {
     question: "Can I use Seed Music for commercial projects?",
     answer:
-      "Commercial use depends on the generation provider and license terms connected to the final product. Review those terms before using any generated track commercially.",
+      "Commercial use depends on the license terms connected to the final product. Review those terms before using any generated track commercially.",
   },
   {
     question: "Does Seed Music claim to be an official product?",
@@ -50,7 +50,7 @@ const jsonLd = [
     operatingSystem: "Web",
     url: siteUrl,
     description:
-      "Seed Music is an AI music generator studio with Kie.ai Suno API workflows for prompt-to-music, lyric-to-song, audio upload, post-processing, voice, MIDI, WAV, and music video creation.",
+      "Seed Music is an AI music generator studio for prompt-to-music, lyric-to-song, audio upload, post-processing, voice, MIDI, WAV, and music video creation.",
     isAccessibleForFree: true,
   },
   {
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Seed Music AI Generator | Seed-Music Studio Preview",
   description:
-    "Seed Music helps creators run Kie.ai Suno API music workflows: prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
+    "Seed Music helps creators run AI music workflows: prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
   keywords: [
     "Seed Music",
     "Seed-Music",

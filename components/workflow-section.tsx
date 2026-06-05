@@ -109,7 +109,7 @@ const STEPS = [
     step: "3",
     title: "Refine & export",
     description:
-      "Adjust tempo, key, or instrumentation notes, then prepare export requirements for the provider or production workflow you connect.",
+      "Adjust tempo, key, or instrumentation notes, then prepare export requirements for the production workflow you connect.",
     accent: "#2A2420",
     detail: (
       <div className="rounded-lg bg-[#F7F5F3] border border-[rgba(42,36,32,0.08)] px-3 py-2">

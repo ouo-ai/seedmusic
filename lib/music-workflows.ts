@@ -1,0 +1,148 @@
+export const MUSIC_MODEL_VERSIONS = ["V5_5", "V5", "V4_5ALL", "V4_5PLUS", "V4_5", "V4", "V3_5"] as const
+
+export type MusicModelVersion = (typeof MUSIC_MODEL_VERSIONS)[number]
+
+export const MUSIC_WORKFLOWS = [
+  {
+    id: "generate",
+    label: "Generate",
+    group: "Create",
+    description: "Prompt-to-song with simple or custom mode.",
+    pollable: true,
+  },
+  {
+    id: "sounds",
+    label: "Sounds",
+    group: "Create",
+    description: "Loops, sound effects, ambience, tempo, and key control.",
+    pollable: true,
+  },
+  {
+    id: "generate-lyrics",
+    label: "Generate Lyrics",
+    group: "Create",
+    description: "Generate structured lyric variations from a prompt.",
+    pollable: true,
+  },
+  {
+    id: "boost-style",
+    label: "Boost Music Style",
+    group: "Create",
+    description: "Rewrite a short style idea into richer model-ready tags.",
+    pollable: false,
+  },
+  {
+    id: "extend",
+    label: "Extend",
+    group: "Edit",
+    description: "Continue an existing generated track from an audio ID.",
+    pollable: true,
+  },
+  {
+    id: "replace-section",
+    label: "Replace Section",
+    group: "Edit",
+    description: "Replace a precise time range inside an existing track.",
+    pollable: true,
+  },
+  {
+    id: "upload-extend",
+    label: "Upload And Extend Audio",
+    group: "Upload",
+    description: "Extend a public uploaded audio URL.",
+    pollable: true,
+  },
+  {
+    id: "upload-cover",
+    label: "Upload And Cover Audio",
+    group: "Upload",
+    description: "Transform an uploaded audio URL into a new style.",
+    pollable: true,
+  },
+  {
+    id: "add-instrumental",
+    label: "Add Instrumental",
+    group: "Upload",
+    description: "Add instrumental accompaniment to uploaded audio.",
+    pollable: true,
+  },
+  {
+    id: "add-vocals",
+    label: "Add Vocals",
+    group: "Upload",
+    description: "Add vocal singing to uploaded audio.",
+    pollable: true,
+  },
+  {
+    id: "mashup",
+    label: "Mashup",
+    group: "Upload",
+    description: "Blend two uploaded audio URLs into one new track.",
+    pollable: true,
+  },
+  {
+    id: "timestamped-lyrics",
+    label: "TimeStamped Lyrics",
+    group: "Post",
+    description: "Retrieve word-level lyric timestamps for a generated audio.",
+    pollable: false,
+  },
+  {
+    id: "cover-generate",
+    label: "Cover Generate",
+    group: "Post",
+    description: "Generate cover artwork for an existing music task.",
+    pollable: true,
+  },
+  {
+    id: "separate-vocals",
+    label: "Separate Vocals",
+    group: "Post",
+    description: "Split vocals, instrumental, or detailed stems.",
+    pollable: true,
+  },
+  {
+    id: "generate-midi",
+    label: "Generate Midi From Audio",
+    group: "Post",
+    description: "Convert separated tracks into MIDI note data.",
+    pollable: true,
+  },
+  {
+    id: "create-video",
+    label: "Create Music Video",
+    group: "Post",
+    description: "Create an MP4 visualization for a generated track.",
+    pollable: true,
+  },
+  {
+    id: "convert-wav",
+    label: "Convert To Wav Format",
+    group: "Post",
+    description: "Convert generated audio to WAV.",
+    pollable: true,
+  },
+  {
+    id: "generate-persona",
+    label: "Generate Persona",
+    group: "Voice",
+    description: "Create a reusable music persona from a completed track.",
+    pollable: false,
+  },
+  {
+    id: "generate-voice",
+    label: "Generate Voice",
+    group: "Voice",
+    description: "Create a custom voice after verification audio is ready.",
+    pollable: true,
+  },
+  {
+    id: "check-voice",
+    label: "Check Voice",
+    group: "Voice",
+    description: "Check whether a generated custom voice is available.",
+    pollable: false,
+  },
+] as const
+
+export type MusicWorkflowId = (typeof MUSIC_WORKFLOWS)[number]["id"]

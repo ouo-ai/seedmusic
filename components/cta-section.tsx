@@ -29,7 +29,7 @@ export default function CTASection() {
             <div className="self-stretch text-center text-[#605A57] text-base leading-7 font-sans font-medium">
               Run Seed Music prompt, lyric, upload, voice, and stem workflows,
               <br />
-              all routed through a server-side Kie.ai Suno API proxy.
+              all inside a focused Seed Music production workspace.
             </div>
           </div>
           <div className="w-full max-w-[497px] flex flex-col justify-center items-center gap-12">

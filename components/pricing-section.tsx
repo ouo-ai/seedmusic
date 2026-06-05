@@ -34,7 +34,7 @@ export default function PricingSection() {
             Simple, transparent pricing
           </div>
           <div className="self-stretch text-center text-[#857870] text-base font-normal leading-7 font-sans">
-            Explore the Seed Music studio now. Usage limits, credits, and rights should match your Kie.ai provider account and product terms.
+            Explore the Seed Music studio now. Usage limits, credits, and rights should match your account and product terms.
           </div>
         </div>
       </div>
@@ -90,7 +90,7 @@ export default function PricingSection() {
                 <div className="flex flex-col gap-1.5">
                   <div className="text-[#2A2420] text-lg font-semibold leading-7 font-sans">Free</div>
                   <div className="text-[rgba(42,36,32,0.60)] text-sm font-normal leading-5 font-sans max-w-[240px]">
-                    Explore Seed Music AI workflows through the Kie.ai API route.
+                    Explore Seed Music AI workflows through the live studio.
                   </div>
                 </div>
                 <div className="flex flex-col gap-1">
@@ -157,7 +157,7 @@ export default function PricingSection() {
                   "Vocal and instrumental modes",
                   "Export format checklist",
                   "Usage-rights review prompts",
-                  "Provider integration notes",
+                  "Production integration notes",
                   "Email handoff",
                 ].map((f) => (
                   <div key={f} className="flex justify-start items-center gap-3">
@@ -210,7 +210,7 @@ export default function PricingSection() {
                   "Stems and MIDI export requirements",
                   "Lyric-to-song workflow mapping",
                   "Brand and campaign prompt sets",
-                  "API integration brief",
+                  "Integration brief",
                   "Dedicated launch support",
                   "Custom terms review",
                 ].map((f) => (
@@ -236,7 +236,7 @@ export default function PricingSection() {
       {/* Disclaimer */}
       <div className="self-stretch px-6 py-4 flex justify-center">
         <p className="text-center text-[rgba(42,36,32,0.40)] text-[11px] font-sans leading-5 max-w-[640px]">
-          Seed Music is an independent AI music generation landing page. Pricing and plan limits shown here are positioning placeholders until billing, user accounts, and Kie.ai usage policies are finalized.
+          Seed Music is an independent AI music generation landing page. Pricing and plan limits shown here are positioning placeholders until billing, user accounts, and usage policies are finalized.
         </p>
       </div>
     </div>

@@ -11,7 +11,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "What is Seed Music and how does it work?",
     answer:
-      "Seed Music is an AI music generator landing page with a server-side Kie.ai Suno API integration for prompt-to-song, lyric-to-song, audio upload, voice, stems, MIDI, WAV, and music video workflows.",
+      "Seed Music is an AI music generator studio for prompt-to-song, lyric-to-song, audio upload, voice, stems, MIDI, WAV, and music video workflows.",
   },
   {
     question: "Are Seed Music, Seed-Music, and seedmusic different?",
@@ -21,7 +21,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "Can I use Seed Music for commercial projects?",
     answer:
-      "Commercial use depends on the generation provider and license terms connected to the final product. Review those terms before using any generated track commercially.",
+      "Commercial use depends on the license terms connected to the final product. Review those terms before using any generated track commercially.",
   },
   {
     question: "What is lyric-to-song mode?",
@@ -31,22 +31,22 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "What does audio reference input do?",
     answer:
-      "Audio reference input is presented as a way to document tempo, key, energy, and tonal texture. A final integration should respect the source file and the connected provider's rights policy.",
+      "Audio reference input is presented as a way to document tempo, key, energy, and tonal texture. A final integration should respect the source file and the connected rights policy.",
   },
   {
     question: "What audio formats can I download?",
     answer:
-      "Seed Music exposes Kie.ai Suno workflows for generated tracks, WAV conversion, stem separation, MIDI generation, and music video creation. Availability depends on the selected workflow, task status, provider credits, and provider terms.",
+      "Seed Music exposes workflows for generated tracks, WAV conversion, stem separation, MIDI generation, and music video creation. Availability depends on the selected workflow, task status, credits, and usage terms.",
   },
   {
     question: "How long does it take to generate a track?",
     answer:
-      "Generation time varies by provider, model, duration, queue load, and quality settings. This page does not promise a fixed generation time.",
+      "Generation time varies by model, duration, queue load, and quality settings. This page does not promise a fixed generation time.",
   },
   {
     question: "Is there a free plan?",
     answer:
-      "The public page exposes a studio interface backed by a server-side API key. Final user limits, credits, and billing should follow the Kie.ai account configuration and any product policy you apply.",
+      "The public page exposes a studio interface for music generation workflows. Final user limits, credits, and billing should follow the account configuration and any product policy you apply.",
   },
   {
     question: "Does Seed Music claim to be an official product?",
