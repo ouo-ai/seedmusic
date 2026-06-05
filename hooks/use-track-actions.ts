@@ -30,6 +30,10 @@ function downloadLinks(links: EngineLink[]): EngineLink[] {
   return links.filter((link) => isDownloadableMediaUrl(link.url))
 }
 
+function findMidiSourceTaskId(track: LibraryTrack): string | undefined {
+  return track.derived?.find((asset) => asset.taskId && asset.label.startsWith("Stems"))?.taskId
+}
+
 export function useTrackActions() {
   const { updateTrack } = useLibrary()
   const { addPersona } = usePersonas()
@@ -56,7 +60,17 @@ export function useTrackActions() {
       setBusy(true)
       const label = DERIVED_LABEL[workflow] ?? "Result"
       try {
-        const result = await submitWorkflow({ workflow, taskId: track.taskId, audioId: track.audioId, ...extra })
+        const sourceTaskId = workflow === "generate-midi" ? findMidiSourceTaskId(track) : track.taskId
+        if (workflow === "generate-midi" && !sourceTaskId) {
+          throw new Error("Separate stems before generating MIDI")
+        }
+
+        const result = await submitWorkflow({
+          workflow,
+          taskId: sourceTaskId,
+          audioId: workflow === "generate-midi" ? undefined : track.audioId,
+          ...extra,
+        })
         if (!result.ok) throw new Error(result.error || "Submission failed")
         let links = downloadLinks(result.links)
         const taskId = result.taskId
@@ -75,7 +89,11 @@ export function useTrackActions() {
         if (links.length) {
           appendDerived(
             track,
-            links.map((link, index) => ({ label: links.length > 1 ? `${label} ${index + 1}` : label, url: link.url })),
+            links.map((link, index) => ({
+              label: links.length > 1 ? `${label} ${index + 1}` : label,
+              url: link.url,
+              taskId: workflow === "separate-vocals" ? taskId ?? undefined : undefined,
+            })),
           )
           toast.success(`${label} ready`)
         } else {

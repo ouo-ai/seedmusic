@@ -12,6 +12,7 @@ export type TrackStatus = "pending" | "ready" | "failed"
 export type DerivedAsset = {
   label: string
   url: string
+  taskId?: string
 }
 
 /** 曲库中的一首曲目（创作结果或单曲操作产物）。 */

@@ -225,6 +225,7 @@ export type KieRequestConfig = {
 
 const MODEL_SET = new Set<string>(SUNO_MODEL_VERSIONS)
 const WORKFLOW_MAP = new Map(SUNO_WORKFLOWS.map((workflow) => [workflow.id, workflow]))
+const DEFAULT_NEGATIVE_TAGS = "low quality, noisy, distorted"
 const UNSUPPORTED_FIELD_HINTS: Record<string, string> = {
   duration: "KIE Suno does not support a fixed duration request parameter. Exact track length is controlled by the selected model.",
   durationSeconds: "KIE Suno does not support durationSeconds. Use model selection and prompts to influence structure; read the returned duration after generation.",
@@ -386,7 +387,7 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         uploadUrl: cleanString(input.uploadUrl),
         title: cleanString(input.title),
         tags: cleanString(input.tags) || cleanString(input.style),
-        negativeTags: cleanString(input.negativeTags),
+        negativeTags: cleanString(input.negativeTags) || DEFAULT_NEGATIVE_TAGS,
         callBackUrl: callbackUrl(input, siteUrl),
         model: MODEL_SET.has(String(input.model)) ? input.model : "V5",
         vocalGender: cleanString(input.vocalGender),
@@ -400,7 +401,7 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
       payload = cleanPayload({
         prompt: cleanString(input.prompt),
         title: cleanString(input.title),
-        negativeTags: cleanString(input.negativeTags),
+        negativeTags: cleanString(input.negativeTags) || DEFAULT_NEGATIVE_TAGS,
         style: cleanString(input.style),
         uploadUrl: cleanString(input.uploadUrl),
         callBackUrl: callbackUrl(input, siteUrl),

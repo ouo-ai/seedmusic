@@ -69,7 +69,7 @@ export function ExtendDialog({ track, actions, open, onOpenChange }: DialogProps
     void actions.runNewTrack(
       track,
       "extend",
-      { defaultParamFlag: true, continueAt: continueAt ? Number(continueAt) : undefined },
+      { defaultParamFlag: false, continueAt: continueAt ? Number(continueAt) : undefined },
       `Extend · ${track.title}`,
     )
     onOpenChange(false)

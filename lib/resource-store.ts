@@ -21,6 +21,8 @@ export function createResourceStore<T extends Identified>(endpoint: string): Res
   let cache: T[] = []
   let loaded = false
   let loading = false
+  const locallyChangedIds = new Set<string>()
+  const deletedIds = new Set<string>()
   const listeners = new Set<Listener>()
   const emit = () => listeners.forEach((listener) => listener())
 
@@ -39,7 +41,18 @@ export function createResourceStore<T extends Identified>(endpoint: string): Res
         .then((res) => res.json())
         .then((data) => {
           if (Array.isArray(data?.items)) {
-            cache = data.items as T[]
+            const serverItems = (data.items as T[]).filter((item) => !deletedIds.has(item.id))
+            const localById = new Map(cache.map((item) => [item.id, item]))
+            const serverIds = new Set(serverItems.map((item) => item.id))
+            const localOnly = cache.filter((item) => locallyChangedIds.has(item.id) && !deletedIds.has(item.id) && !serverIds.has(item.id))
+
+            cache = [
+              ...localOnly,
+              ...serverItems.map((item) => {
+                const local = localById.get(item.id)
+                return local && locallyChangedIds.has(item.id) ? { ...item, ...local } : item
+              }),
+            ]
             loaded = true
             emit()
           }
@@ -50,6 +63,8 @@ export function createResourceStore<T extends Identified>(endpoint: string): Res
         })
     },
     add(item) {
+      locallyChangedIds.add(item.id)
+      deletedIds.delete(item.id)
       cache = [item, ...cache.filter((entry) => entry.id !== item.id)]
       emit()
       void fetch(endpoint, {
@@ -59,6 +74,7 @@ export function createResourceStore<T extends Identified>(endpoint: string): Res
       }).catch(() => {})
     },
     update(id, patch) {
+      locallyChangedIds.add(id)
       cache = cache.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry))
       emit()
       void fetch(`${endpoint}/${id}`, {
@@ -68,6 +84,8 @@ export function createResourceStore<T extends Identified>(endpoint: string): Res
       }).catch(() => {})
     },
     remove(id) {
+      locallyChangedIds.delete(id)
+      deletedIds.add(id)
       cache = cache.filter((entry) => entry.id !== id)
       emit()
       void fetch(`${endpoint}/${id}`, { method: "DELETE" }).catch(() => {})

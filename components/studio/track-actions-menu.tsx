@@ -19,6 +19,13 @@ export function TrackActionsMenu({ track }: { track: LibraryTrack }) {
   const actions = useTrackActions()
   const [dialog, setDialog] = useState<TrackActionId | null>(null)
 
+  const hasMidiSource = Boolean(track.derived?.some((asset) => asset.taskId && asset.label.startsWith("Stems")))
+  const isDisabled = (id: TrackActionId, needsAudioId: boolean) => {
+    if (needsAudioId && !track.audioId) return true
+    if (id === "generate-midi") return !hasMidiSource
+    return false
+  }
+
   const handle = (id: TrackActionId, kind: "one-click" | "dialog") => {
     if (kind === "dialog") {
       setDialog(id)
@@ -44,9 +51,10 @@ export function TrackActionsMenu({ track }: { track: LibraryTrack }) {
           {TRACK_ACTIONS.map((action) => (
             <DropdownMenuItem
               key={action.id}
-              disabled={action.needsAudioId && !track.audioId}
+              disabled={isDisabled(action.id, action.needsAudioId)}
               onSelect={() => handle(action.id, action.kind)}
-              className="cursor-pointer"
+              title={action.id === "generate-midi" && !hasMidiSource ? "Separate stems before generating MIDI" : undefined}
+              className="cursor-pointer disabled:cursor-not-allowed"
             >
               {action.label}
             </DropdownMenuItem>

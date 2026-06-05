@@ -13,6 +13,8 @@ import { SelectField } from "../fields/select-field"
 import { StyleField } from "../fields/style-field"
 import { TextField } from "../fields/text-field"
 
+const DEFAULT_NEGATIVE_TAGS = "low quality, noisy, distorted"
+
 export function FromAudioForm({ onCreated }: { onCreated: (id: string) => void }) {
   const { run } = useEngineRunner()
 
@@ -60,10 +62,12 @@ export function FromAudioForm({ onCreated }: { onCreated: (id: string) => void }
     } else if (actionId === "add-instrumental") {
       payload.title = title.trim() || "Instrumental"
       payload.tags = style.trim() || "instrumental, clean"
+      payload.negativeTags = DEFAULT_NEGATIVE_TAGS
     } else if (actionId === "add-vocals") {
       payload.prompt = prompt.trim()
       payload.title = title.trim() || "Vocals"
       payload.style = style.trim() || "pop vocal"
+      payload.negativeTags = DEFAULT_NEGATIVE_TAGS
     }
 
     setSubmitting(true)
