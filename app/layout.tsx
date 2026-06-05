@@ -9,7 +9,7 @@ const faqItems = [
   {
     question: "What is Seed Music and how does it work?",
     answer:
-      "Seed Music is an AI music generator landing page and studio preview for exploring prompt-to-song, lyric-to-song, and audio-reference workflows.",
+      "Seed Music is an AI music generator landing page with a server-side Kie.ai Suno API integration for prompt-to-song, lyric-to-song, upload, voice, stems, MIDI, WAV, and music video workflows.",
   },
   {
     question: "Are Seed Music, Seed-Music, and seedmusic the same page?",
@@ -37,7 +37,7 @@ const jsonLd = [
     alternateName: ["SeedMusic", "Seed-Music", "seedmusic"],
     url: siteUrl,
     description:
-      "Seed Music helps creators explore AI music generation workflows for prompts, lyrics, style controls, and audio-reference music previews.",
+      "Seed Music helps creators run AI music generation workflows for prompts, lyrics, style controls, audio uploads, voice, stems, MIDI, WAV, and music video outputs.",
     inLanguage: "en",
   },
   {
@@ -50,7 +50,7 @@ const jsonLd = [
     operatingSystem: "Web",
     url: siteUrl,
     description:
-      "Seed Music is an AI music generator studio preview for prompt-to-music, lyric-to-song, and audio-reference creative workflows.",
+      "Seed Music is an AI music generator studio with Kie.ai Suno API workflows for prompt-to-music, lyric-to-song, audio upload, post-processing, voice, MIDI, WAV, and music video creation.",
     isAccessibleForFree: true,
   },
   {
@@ -87,7 +87,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Seed Music AI Generator | Seed-Music Studio Preview",
   description:
-    "Seed Music helps creators explore AI music workflows: prompt-to-song drafts, lyric ideas, style controls, and audio-reference previews for seedmusic creators.",
+    "Seed Music helps creators run Kie.ai Suno API music workflows: prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
   keywords: [
     "Seed Music",
     "Seed-Music",
@@ -107,7 +107,7 @@ export const metadata: Metadata = {
     url: siteUrl,
     title: "Seed Music AI Generator | Seed-Music Studio Preview",
     description:
-      "Explore Seed Music for prompt-to-song drafts, lyric ideas, style controls, and audio-reference AI music workflows.",
+      "Run Seed Music workflows for prompt-to-song drafts, lyric ideas, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
     siteName: "Seed Music",
     images: [
       {
@@ -122,7 +122,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Seed Music AI Generator | Seed-Music Studio Preview",
     description:
-      "Explore Seed Music AI workflows for prompts, lyrics, style controls, and audio-reference previews.",
+      "Run Seed Music AI workflows for prompts, lyrics, upload edits, stems, MIDI, WAV, voice, and music video tasks.",
     images: ["/opengraph-image"],
   },
   icons: {

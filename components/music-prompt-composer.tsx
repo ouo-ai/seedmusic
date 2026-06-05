@@ -1,15 +1,39 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
+
+import { SUNO_MODEL_VERSIONS, SUNO_WORKFLOWS, type SunoWorkflowId } from "@/lib/kie-suno"
 
 type Genre = "Pop" | "Hip-Hop" | "Electronic" | "Rock" | "Jazz" | "Classical" | "Folk" | "R&B"
 type Mood = "Energetic" | "Chill" | "Melancholic" | "Uplifting" | "Dark" | "Romantic"
 type VocalMode = "Vocals" | "Instrumental"
 type Duration = "0:30" | "1:00" | "2:00" | "3:00"
+type Phase = "idle" | "submitting" | "created" | "ready" | "error"
+
+type ApiResult = {
+  ok?: boolean
+  status?: number
+  data?: unknown
+  error?: string
+  taskId?: string | null
+}
+
+type LinkResult = {
+  label: string
+  url: string
+}
+
+type TrackResult = {
+  id: string
+  title: string
+  meta: string
+  audioUrl?: string
+}
 
 const GENRES: Genre[] = ["Pop", "Hip-Hop", "Electronic", "Rock", "Jazz", "Classical", "Folk", "R&B"]
 const MOODS: Mood[] = ["Energetic", "Chill", "Melancholic", "Uplifting", "Dark", "Romantic"]
 const DURATIONS: Duration[] = ["0:30", "1:00", "2:00", "3:00"]
+const POLLABLE_WORKFLOWS = new Set<string>(SUNO_WORKFLOWS.filter((workflow) => "detailPath" in workflow).map((workflow) => workflow.id))
 
 const EXAMPLE_PROMPTS = [
   "A driving synthwave track for a late-night city montage, pulsing bass, neon nostalgia",
@@ -18,7 +42,6 @@ const EXAMPLE_PROMPTS = [
   "Cinematic orchestral swell that builds to an emotional peak, no lyrics",
 ]
 
-// Animated waveform
 function LiveWaveform({ isGenerating }: { isGenerating: boolean }) {
   const bars = Array.from({ length: 40 })
   return (
@@ -45,7 +68,6 @@ function LiveWaveform({ isGenerating }: { isGenerating: boolean }) {
   )
 }
 
-// Pill selector
 function PillSelector<T extends string>({
   label,
   options,
@@ -64,6 +86,7 @@ function PillSelector<T extends string>({
         {options.map((opt) => (
           <button
             key={opt}
+            type="button"
             onClick={() => onChange(opt)}
             className={`px-3 py-1 rounded-full text-[12px] font-medium font-sans transition-colors border ${
               value === opt
@@ -79,77 +102,120 @@ function PillSelector<T extends string>({
   )
 }
 
-// Mock generated track row
-function GeneratedTrack({
-  title,
-  meta,
-  idx,
-  playing,
-  onToggle,
+function SelectField({
+  label,
+  value,
+  onChange,
+  children,
 }: {
-  title: string
-  meta: string
-  idx: number
-  playing: boolean
-  onToggle: () => void
+  label: string
+  value: string
+  onChange: (value: string) => void
+  children: React.ReactNode
 }) {
   return (
-    <div
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl cursor-pointer transition-colors ${
-        playing
-          ? "bg-[rgba(26,158,143,0.08)] border border-[rgba(26,158,143,0.22)]"
-          : "hover:bg-[rgba(42,36,32,0.04)] border border-transparent"
-      }`}
-      onClick={onToggle}
-    >
-      {/* Play/pause */}
-      <button
-        aria-label={playing ? `Pause ${title}` : `Play ${title}`}
-        className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-          playing ? "bg-[#E8541A]" : "bg-[rgba(42,36,32,0.08)] hover:bg-[rgba(42,36,32,0.14)]"
-        }`}
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-10 rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 text-[#2A2420] text-sm font-sans focus:outline-none focus:border-[rgba(42,36,32,0.36)]"
       >
-        {playing ? (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <rect x="1.5" y="1.5" width="2.5" height="7" rx="1" fill="white" />
-            <rect x="6" y="1.5" width="2.5" height="7" rx="1" fill="white" />
-          </svg>
-        ) : (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2.5 1.5L8.5 5L2.5 8.5V1.5Z" fill="#2A2420" />
-          </svg>
-        )}
-      </button>
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[#2A2420] text-[13px] font-semibold leading-[18px] font-sans truncate">{title}</div>
-        <div className="text-[#857870] text-[11px] font-normal font-sans leading-4">{meta}</div>
-      </div>
-      {/* Mini waveform / time */}
-      {playing ? (
-        <div className="flex items-end gap-[2px] h-6">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-[2px] rounded-full bg-[#1A9E8F]"
-              style={{ height: `${Math.round(6 + Math.abs(Math.sin(i * 0.8)) * 12)}px`, opacity: 0.7 + (i % 3) * 0.1 }}
-            />
-          ))}
-        </div>
-      ) : (
-        <span className="text-[#857870] text-[11px] font-mono">
-          {idx === 0 ? "2:47" : idx === 1 ? "3:05" : "2:31"}
-        </span>
-      )}
-    </div>
+        {children}
+      </select>
+    </label>
   )
 }
 
-const RESULT_TRACKS = [
-  { title: "Neon Cascade", meta: "Electronic · Instrumental · 130 BPM" },
-  { title: "Cascade (Vocal Mix)", meta: "Electronic · Vocals · 130 BPM" },
-  { title: "Low-Key Version", meta: "Electronic · Stripped · 95 BPM" },
-]
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder: string
+  type?: "text" | "number" | "url"
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-10 rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 text-[#2A2420] text-sm font-sans placeholder:text-[rgba(42,36,32,0.35)] focus:outline-none focus:border-[rgba(42,36,32,0.36)]"
+      />
+    </label>
+  )
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {}
+}
+
+function extractTaskId(result: ApiResult | null) {
+  if (!result) return ""
+  if (typeof result.taskId === "string") return result.taskId
+  const data = asRecord(result.data)
+  if (typeof data.taskId === "string") return data.taskId
+  const nested = asRecord(data.data)
+  if (typeof nested.taskId === "string") return nested.taskId
+  if (typeof nested.task_id === "string") return nested.task_id
+  return ""
+}
+
+function extractTracks(result: ApiResult | null): TrackResult[] {
+  if (!result) return []
+  const root = asRecord(result.data)
+  const data = asRecord(root.data)
+  const response = asRecord(data.response)
+  const candidates = [response.sunoData, response.data, data.sunoData, data.items, data.audio_info].filter(Array.isArray)
+  const rows = (candidates[0] || []) as Array<Record<string, unknown>>
+
+  return rows.slice(0, 6).map((row, index) => ({
+    id: String(row.id || row.audio_id || row.audioId || `${index}`),
+    title: String(row.title || row.name || `Seed Music result ${index + 1}`),
+    meta: [row.modelName || row.model, row.duration || row.duration_seconds, row.tags || row.style].filter(Boolean).join(" · "),
+    audioUrl:
+      typeof row.audioUrl === "string"
+        ? row.audioUrl
+        : typeof row.audio_url === "string"
+          ? row.audio_url
+          : typeof row.streamAudioUrl === "string"
+            ? row.streamAudioUrl
+            : typeof row.stream_audio_url === "string"
+              ? row.stream_audio_url
+              : undefined,
+  }))
+}
+
+function collectLinks(value: unknown, links: LinkResult[] = [], path = "result") {
+  if (!value || links.length >= 8) return links
+  if (typeof value === "string" && /^https?:\/\//i.test(value)) {
+    links.push({ label: path.replace(/\./g, " / "), url: value })
+    return links
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectLinks(item, links, `${path}.${index + 1}`))
+    return links
+  }
+  if (typeof value === "object") {
+    for (const [key, item] of Object.entries(value)) {
+      collectLinks(item, links, `${path}.${key}`)
+    }
+  }
+  return links
+}
+
+function readableJson(value: unknown) {
+  if (!value) return ""
+  return JSON.stringify(value, null, 2)
+}
 
 export default function MusicPromptComposer() {
   const [prompt, setPrompt] = useState("")
@@ -157,24 +223,134 @@ export default function MusicPromptComposer() {
   const [mood, setMood] = useState<Mood>("Energetic")
   const [vocals, setVocals] = useState<VocalMode>("Instrumental")
   const [duration, setDuration] = useState<Duration>("2:00")
-  const [phase, setPhase] = useState<"idle" | "generating" | "done">("idle")
+  const [workflowId, setWorkflowId] = useState<SunoWorkflowId>("generate")
+  const [model, setModel] = useState("V5_5")
+  const [title, setTitle] = useState("Seed Music draft")
+  const [style, setStyle] = useState("Electronic, energetic, polished, cinematic")
+  const [uploadUrl, setUploadUrl] = useState("")
+  const [secondUploadUrl, setSecondUploadUrl] = useState("")
+  const [taskId, setTaskId] = useState("")
+  const [audioId, setAudioId] = useState("")
+  const [continueAt, setContinueAt] = useState("")
+  const [phase, setPhase] = useState<Phase>("idle")
+  const [result, setResult] = useState<ApiResult | null>(null)
+  const [error, setError] = useState("")
   const [playingTrack, setPlayingTrack] = useState<number | null>(null)
-  const [activeTab, setActiveTab] = useState<"prompt" | "lyrics" | "reference">("prompt")
 
-  const handleGenerate = () => {
-    if (phase === "generating") return
-    setPhase("generating")
-    setPlayingTrack(null)
-    setTimeout(() => setPhase("done"), 2800)
+  const workflow = useMemo(() => SUNO_WORKFLOWS.find((item) => item.id === workflowId) || SUNO_WORKFLOWS[0], [workflowId])
+  const charLeft = 5000 - prompt.length
+  const tracks = extractTracks(result)
+  const links = collectLinks(result?.data).filter((link) => !tracks.some((track) => track.audioUrl === link.url)).slice(0, 5)
+  const activeTaskId = taskId || extractTaskId(result)
+  const canPoll = POLLABLE_WORKFLOWS.has(workflowId) && Boolean(activeTaskId)
+  const needsUpload = ["upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup", "generate-voice"].includes(workflowId)
+  const needsTask = [
+    "extend",
+    "replace-section",
+    "timestamped-lyrics",
+    "cover-generate",
+    "separate-vocals",
+    "generate-midi",
+    "create-video",
+    "convert-wav",
+    "generate-persona",
+    "generate-voice",
+    "check-voice",
+  ].includes(workflowId)
+  const needsAudioId = [
+    "extend",
+    "replace-section",
+    "timestamped-lyrics",
+    "separate-vocals",
+    "generate-midi",
+    "create-video",
+    "convert-wav",
+    "generate-persona",
+  ].includes(workflowId)
+
+  const handleExample = (example: string) => setPrompt(example)
+
+  const buildPayload = () => {
+    const styleText = style.trim() || `${genre}, ${mood}, ${vocals}`
+    const uploadUrlList = [uploadUrl, secondUploadUrl].filter((url) => url.trim())
+    return {
+      workflow: workflowId,
+      model,
+      prompt: prompt.trim(),
+      customMode: true,
+      defaultParamFlag: true,
+      instrumental: vocals === "Instrumental",
+      style: styleText,
+      tags: styleText,
+      title: title.trim() || "Seed Music draft",
+      negativeTags: "low quality, noisy, distorted",
+      uploadUrl,
+      uploadUrlList,
+      taskId: activeTaskId,
+      audioId,
+      content: styleText,
+      continueAt: continueAt ? Number(continueAt) : undefined,
+      infillStartS: 20,
+      infillEndS: 40,
+      separationType: "separate_vocal",
+      author: "Seed Music",
+      domainName: "seed.music",
+      name: title,
+      description: prompt,
+      verifyUrl: uploadUrl,
+      voiceName: title,
+      singerSkillLevel: "beginner",
+      soundLoop: duration === "0:30",
+      grabLyrics: true,
+    }
   }
 
-  const handleExample = (ex: string) => setPrompt(ex)
+  const submitWorkflow = async () => {
+    if (phase === "submitting") return
+    setPhase("submitting")
+    setError("")
+    setPlayingTrack(null)
 
-  const charLeft = 280 - prompt.length
+    try {
+      const response = await fetch("/api/kie-suno", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload()),
+      })
+      const data = (await response.json()) as ApiResult
+      setResult(data)
+      const createdTaskId = extractTaskId(data)
+      if (createdTaskId) setTaskId(createdTaskId)
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Kie.ai returned HTTP ${response.status}`)
+      }
+      setPhase(createdTaskId ? "created" : "ready")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kie.ai request failed.")
+      setPhase("error")
+    }
+  }
+
+  const checkStatus = async () => {
+    if (!canPoll || phase === "submitting") return
+    setPhase("submitting")
+    setError("")
+    try {
+      const response = await fetch(`/api/kie-suno?workflow=${encodeURIComponent(workflowId)}&taskId=${encodeURIComponent(activeTaskId)}`)
+      const data = (await response.json()) as ApiResult
+      setResult(data)
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || `Kie.ai returned HTTP ${response.status}`)
+      }
+      setPhase("ready")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kie.ai status request failed.")
+      setPhase("error")
+    }
+  }
 
   return (
     <div className="flex flex-col">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(42,36,32,0.08)]">
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -182,72 +358,75 @@ export default function MusicPromptComposer() {
             <circle cx="8" cy="8" r="2.5" fill="#E8541A" />
           </svg>
           <span className="text-[#2A2420] text-sm font-semibold font-sans">SeedMusic Studio</span>
-          <span className="px-2 py-0.5 bg-[rgba(232,84,26,0.10)] text-[#E8541A] text-[11px] font-medium rounded-full font-sans">Demo preview</span>
+          <span className="px-2 py-0.5 bg-[rgba(26,158,143,0.10)] text-[#1A9E8F] text-[11px] font-medium rounded-full font-sans">Kie.ai live API</span>
         </div>
         <div className="flex items-center gap-2 text-[rgba(42,36,32,0.50)] text-xs font-sans">
-          <span className="hidden sm:inline">No account needed</span>
+          <span className="hidden sm:inline">{workflow.group}</span>
           <div className="w-1.5 h-1.5 rounded-full bg-[#1A9E8F]" />
         </div>
       </div>
 
       <div className="flex flex-col md:flex-row">
-        {/* ── LEFT: INPUT PANEL ──────────────────── */}
         <div className="flex-1 md:border-r border-[rgba(42,36,32,0.08)] flex flex-col">
-          {/* Mode tabs */}
-          <div className="flex border-b border-[rgba(42,36,32,0.08)]">
-            {(["prompt", "lyrics", "reference"] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`flex-1 py-3 text-[12px] font-medium font-sans capitalize transition-colors border-b-2 ${
-                  activeTab === tab
-                    ? "text-[#2A2420] border-[#E8541A]"
-                    : "text-[rgba(42,36,32,0.50)] border-transparent hover:text-[#2A2420]"
-                }`}
-              >
-                {tab === "prompt" ? "Text prompt" : tab === "lyrics" ? "Lyrics to song" : "Audio reference"}
-              </button>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-5 border-b border-[rgba(42,36,32,0.08)]">
+            <SelectField label="Model Type" value={workflowId} onChange={(value) => setWorkflowId(value as SunoWorkflowId)}>
+              {["Create", "Edit", "Upload", "Post", "Voice"].map((group) => (
+                <optgroup key={group} label={group}>
+                  {SUNO_WORKFLOWS.filter((item) => item.group === group).map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </SelectField>
+            <SelectField label="Model Version" value={model} onChange={setModel}>
+              {SUNO_MODEL_VERSIONS.map((version) => (
+                <option key={version} value={version}>
+                  {version}
+                </option>
+              ))}
+            </SelectField>
           </div>
 
           <div className="flex flex-col gap-4 p-5">
-            {/* Textarea */}
+            <div className="rounded-xl bg-[rgba(26,158,143,0.07)] border border-[rgba(26,158,143,0.18)] px-4 py-3">
+              <div className="text-[#2A2420] text-sm font-semibold font-sans">{workflow.label}</div>
+              <div className="text-[#857870] text-xs leading-5 font-sans mt-0.5">{workflow.description}</div>
+            </div>
+
             <div className="relative">
               <textarea
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value.slice(0, 280))}
-                placeholder={
-                  activeTab === "prompt"
-                    ? "Describe your track: style, instruments, mood, tempo, story..."
-                    : activeTab === "lyrics"
-                    ? "Paste your lyrics here and Seed Music will map the music direction..."
-                    : "Describe what you want — then upload a reference audio below..."
-                }
-                rows={4}
+                onChange={(event) => setPrompt(event.target.value.slice(0, 5000))}
+                placeholder="Describe the music, lyrics, edit, voice, or post-processing request for the selected Kie.ai Suno workflow..."
+                rows={5}
                 className="w-full resize-none rounded-xl border border-[rgba(42,36,32,0.14)] bg-[#FAFAF9] px-4 py-3 text-[#2A2420] text-sm font-sans placeholder:text-[rgba(42,36,32,0.35)] focus:outline-none focus:border-[rgba(42,36,32,0.36)] leading-relaxed"
               />
-              <div className="absolute bottom-3 right-3 text-[11px] font-mono text-[rgba(42,36,32,0.35)]">
-                {charLeft}
-              </div>
+              <div className="absolute bottom-3 right-3 text-[11px] font-mono text-[rgba(42,36,32,0.35)]">{charLeft}</div>
             </div>
 
-            {/* Example prompts */}
             <div className="flex flex-col gap-1.5">
               <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">Try an example</span>
               <div className="flex flex-wrap gap-1.5">
-                {EXAMPLE_PROMPTS.slice(0, 2).map((ex, i) => (
+                {EXAMPLE_PROMPTS.slice(0, 2).map((example) => (
                   <button
-                    key={i}
-                    onClick={() => handleExample(ex)}
+                    key={example}
+                    type="button"
+                    onClick={() => handleExample(example)}
                     className="px-3 py-1.5 bg-[#F0EDE9] hover:bg-[#E8E3DC] text-[#2A2420] text-[11px] font-medium rounded-lg font-sans transition-colors text-left max-w-[260px] truncate border border-[rgba(42,36,32,0.08)]"
                   >
-                    {ex.slice(0, 52)}...
+                    {example.slice(0, 52)}...
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Controls grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <TextField label="Title" value={title} onChange={setTitle} placeholder="Seed Music draft" />
+              <TextField label="Style / Tags" value={style} onChange={setStyle} placeholder="Electronic, cinematic, upbeat" />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <PillSelector label="Genre" options={GENRES} value={genre} onChange={setGenre} />
               <PillSelector label="Mood" options={MOODS} value={mood} onChange={setMood} />
@@ -258,70 +437,123 @@ export default function MusicPromptComposer() {
               <PillSelector label="Duration" options={DURATIONS} value={duration} onChange={setDuration} />
             </div>
 
-            {/* Generate button */}
+            {(needsUpload || workflowId === "mashup") && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <TextField label={workflowId === "generate-voice" ? "Verify Audio URL" : "Upload URL"} value={uploadUrl} onChange={setUploadUrl} placeholder="https://..." type="url" />
+                {workflowId === "mashup" ? (
+                  <TextField label="Second Upload URL" value={secondUploadUrl} onChange={setSecondUploadUrl} placeholder="https://..." type="url" />
+                ) : (
+                  <TextField label="Continue At" value={continueAt} onChange={setContinueAt} placeholder="60" type="number" />
+                )}
+              </div>
+            )}
+
+            {(needsTask || needsAudioId) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {needsTask && <TextField label="Task ID" value={taskId} onChange={setTaskId} placeholder="Kie taskId" />}
+                {needsAudioId && <TextField label="Audio ID" value={audioId} onChange={setAudioId} placeholder="Generated audio id" />}
+              </div>
+            )}
+
             <button
-              onClick={handleGenerate}
-              disabled={phase === "generating"}
+              type="button"
+              onClick={submitWorkflow}
+              disabled={phase === "submitting"}
               className={`w-full h-11 rounded-xl flex items-center justify-center gap-2 font-sans font-medium text-sm transition-all ${
-                phase === "generating"
+                phase === "submitting"
                   ? "bg-[rgba(42,36,32,0.08)] text-[rgba(42,36,32,0.40)] cursor-not-allowed"
                   : "bg-[#2A2420] text-white hover:bg-[#1a1512] shadow-[0px_2px_8px_rgba(42,36,32,0.18)]"
               }`}
             >
-              {phase === "generating" ? (
+              {phase === "submitting" ? (
                 <>
                   <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
                     <circle cx="7" cy="7" r="5.5" stroke="rgba(42,36,32,0.3)" strokeWidth="2" />
                     <path d="M7 1.5A5.5 5.5 0 0 1 12.5 7" stroke="#E8541A" strokeWidth="2" strokeLinecap="round" />
                   </svg>
-                  Previewing...
-                </>
-              ) : phase === "done" ? (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                  Preview again
+                  Sending to Kie.ai...
                 </>
               ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 1v12M1 7h12" stroke="white" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                  Preview with Seed Music AI
-                </>
+                "Run Kie.ai Suno workflow"
               )}
             </button>
           </div>
         </div>
 
-        {/* ── RIGHT: OUTPUT PANEL ─────────────────── */}
         <div className="flex-1 flex flex-col">
-          {/* Waveform area */}
           <div className="px-5 py-4 border-b border-[rgba(42,36,32,0.08)] flex flex-col gap-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">
-                {phase === "idle" ? "Output preview" : phase === "generating" ? "Previewing..." : "Preview tracks"}
+                {phase === "idle" ? "API output" : phase === "submitting" ? "Processing" : phase === "error" ? "Error" : "Kie.ai result"}
               </span>
-              {phase === "done" && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#1A9E8F]" />
-                  <span className="text-[11px] text-[#1A9E8F] font-medium font-sans">3 variations</span>
-                </div>
+              {activeTaskId && (
+                <button
+                  type="button"
+                  onClick={checkStatus}
+                  disabled={!canPoll || phase === "submitting"}
+                  className="px-3 py-1.5 bg-white border border-[rgba(42,36,32,0.16)] rounded-lg text-[12px] font-medium text-[#2A2420] font-sans hover:bg-[#F0EDE9] transition-colors disabled:opacity-40"
+                >
+                  Check status
+                </button>
               )}
             </div>
             <div className="w-full bg-[#F0EDE9] rounded-xl overflow-hidden flex items-center justify-center" style={{ height: "80px" }}>
               {phase === "idle" ? (
-                <span className="text-[rgba(42,36,32,0.30)] text-sm font-sans">Set your controls and preview</span>
+                <span className="text-[rgba(42,36,32,0.30)] text-sm font-sans">Choose a model type and submit</span>
               ) : (
-                <LiveWaveform isGenerating={phase === "generating"} />
+                <LiveWaveform isGenerating={phase === "submitting"} />
               )}
             </div>
           </div>
 
-          {/* Track list */}
-          <div className="flex-1 p-4 flex flex-col gap-1">
-            {phase === "idle" && (
+          <div className="flex-1 p-4 flex flex-col gap-3">
+            {error && (
+              <div className="rounded-xl border border-[rgba(232,84,26,0.25)] bg-[rgba(232,84,26,0.08)] px-4 py-3 text-[#8A2D10] text-sm font-sans">
+                {error}
+              </div>
+            )}
+
+            {activeTaskId && (
+              <div className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-white px-4 py-3">
+                <div className="text-[11px] text-[rgba(42,36,32,0.45)] uppercase tracking-wide font-sans">Task ID</div>
+                <div className="text-[#2A2420] text-xs font-mono break-all mt-1">{activeTaskId}</div>
+              </div>
+            )}
+
+            {tracks.length > 0 &&
+              tracks.map((track, index) => (
+                <div key={track.id} className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-white px-4 py-3 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPlayingTrack((current) => (current === index ? null : index))}
+                    className="flex items-center gap-3 text-left"
+                  >
+                    <span className={`w-8 h-8 rounded-full flex items-center justify-center ${playingTrack === index ? "bg-[#E8541A]" : "bg-[rgba(42,36,32,0.08)]"}`}>
+                      <span className="text-[10px] font-mono text-[#2A2420]">{index + 1}</span>
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[#2A2420] text-[13px] font-semibold leading-[18px] font-sans truncate">{track.title}</span>
+                      <span className="block text-[#857870] text-[11px] font-normal font-sans leading-4 truncate">{track.meta || workflow.label}</span>
+                    </span>
+                  </button>
+                  {track.audioUrl && <audio className="w-full h-8" src={track.audioUrl} controls preload="none" />}
+                </div>
+              ))}
+
+            {links.length > 0 && (
+              <div className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-white px-4 py-3">
+                <div className="text-[11px] text-[rgba(42,36,32,0.45)] uppercase tracking-wide font-sans mb-2">Returned URLs</div>
+                <div className="flex flex-col gap-1.5">
+                  {links.map((link) => (
+                    <a key={`${link.label}-${link.url}`} href={link.url} target="_blank" rel="noreferrer" className="text-[#1A6E66] text-xs font-sans underline underline-offset-2 break-all">
+                      {link.label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!result && !error && (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-6 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-[#F0EDE9] flex items-center justify-center">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -330,42 +562,27 @@ export default function MusicPromptComposer() {
                   </svg>
                 </div>
                 <div>
-                  <div className="text-[#2A2420] text-sm font-medium font-sans">No previews yet</div>
-                  <div className="text-[rgba(42,36,32,0.50)] text-xs font-sans mt-0.5">Configure and preview sample results</div>
+                  <div className="text-[#2A2420] text-sm font-medium font-sans">No task yet</div>
+                  <div className="text-[rgba(42,36,32,0.50)] text-xs font-sans mt-0.5">Submit a Kie.ai Suno workflow to start</div>
                 </div>
               </div>
             )}
 
-            {phase === "generating" && (
-              <div className="flex-1 flex flex-col items-center justify-center gap-2 py-6">
-                {[0.4, 0.7, 0.55].map((w, i) => (
-                  <div key={i} className="w-full h-12 bg-[#F0EDE9] rounded-xl animate-pulse" style={{ opacity: w }} />
-                ))}
-              </div>
+            {result && (
+              <details className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-[#FAFAF9] px-4 py-3">
+                <summary className="cursor-pointer text-[#2A2420] text-xs font-medium font-sans">Raw API response</summary>
+                <pre className="mt-3 max-h-[220px] overflow-auto text-[11px] leading-5 text-[rgba(42,36,32,0.70)] font-mono whitespace-pre-wrap">
+                  {readableJson(result)}
+                </pre>
+              </details>
             )}
-
-            {phase === "done" &&
-              RESULT_TRACKS.map((track, idx) => (
-                <GeneratedTrack
-                  key={idx}
-                  title={track.title}
-                  meta={track.meta}
-                  idx={idx}
-                  playing={playingTrack === idx}
-                  onToggle={() => setPlayingTrack((p) => (p === idx ? null : idx))}
-                />
-              ))}
           </div>
 
-          {/* Download / export strip */}
-          {phase === "done" && (
-            <div className="px-5 py-3 border-t border-[rgba(42,36,32,0.08)] flex items-center justify-between">
-              <span className="text-[11px] text-[rgba(42,36,32,0.45)] font-sans">Demo — sign in to download tracks</span>
-              <button className="px-3 py-1.5 bg-white border border-[rgba(42,36,32,0.16)] rounded-lg text-[12px] font-medium text-[#2A2420] font-sans hover:bg-[#F0EDE9] transition-colors">
-                Sign up to export
-              </button>
-            </div>
-          )}
+          <div className="px-5 py-3 border-t border-[rgba(42,36,32,0.08)]">
+            <span className="text-[11px] text-[rgba(42,36,32,0.45)] font-sans">
+              Kie.ai tasks may need polling after creation. Provider usage rights, credits, and moderation rules apply.
+            </span>
+          </div>
         </div>
       </div>
     </div>

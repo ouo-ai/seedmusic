@@ -27,9 +27,9 @@ export default function CTASection() {
               Ready to shape your next track idea?
             </div>
             <div className="self-stretch text-center text-[#605A57] text-base leading-7 font-sans font-medium">
-              Explore Seed Music prompt, lyric, and reference workflows,
+              Run Seed Music prompt, lyric, upload, voice, and stem workflows,
               <br />
-              then connect your preferred generation backend when ready.
+              all routed through a server-side Kie.ai Suno API proxy.
             </div>
           </div>
           <div className="w-full max-w-[497px] flex flex-col justify-center items-center gap-12">
@@ -37,7 +37,7 @@ export default function CTASection() {
               <div className="h-10 px-12 py-[6px] relative bg-[#37322F] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] overflow-hidden rounded-full flex justify-center items-center cursor-pointer hover:bg-[#2A2520] transition-colors">
                 <div className="w-44 h-[41px] absolute left-0 top-0 bg-gradient-to-b from-[rgba(255,255,255,0)] to-[rgba(0,0,0,0.10)] mix-blend-multiply"></div>
                 <div className="flex flex-col justify-center text-white text-[13px] font-medium leading-5 font-sans">
-                  Open studio preview
+                  Open live studio
                 </div>
               </div>
             </div>

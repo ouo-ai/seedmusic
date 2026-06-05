@@ -11,7 +11,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "What is Seed Music and how does it work?",
     answer:
-      "Seed Music is an AI music generator landing page and studio preview for exploring prompt-to-song, lyric-to-song, and audio-reference workflows. The on-page composer is a demo preview unless a generation API is later connected.",
+      "Seed Music is an AI music generator landing page with a server-side Kie.ai Suno API integration for prompt-to-song, lyric-to-song, audio upload, voice, stems, MIDI, WAV, and music video workflows.",
   },
   {
     question: "Are Seed Music, Seed-Music, and seedmusic different?",
@@ -36,7 +36,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "What audio formats can I download?",
     answer:
-      "The preview shows common output formats such as WAV, stems, and MIDI as workflow examples. Actual export formats depend on the generation backend and plan terms you connect.",
+      "Seed Music exposes Kie.ai Suno workflows for generated tracks, WAV conversion, stem separation, MIDI generation, and music video creation. Availability depends on the selected workflow, task status, provider credits, and provider terms.",
   },
   {
     question: "How long does it take to generate a track?",
@@ -46,7 +46,7 @@ const FAQ_DATA: FAQItem[] = [
   {
     question: "Is there a free plan?",
     answer:
-      "The public page currently presents a free studio preview. Live account limits and billing can be finalized after the generation backend and terms are connected.",
+      "The public page exposes a studio interface backed by a server-side API key. Final user limits, credits, and billing should follow the Kie.ai account configuration and any product policy you apply.",
   },
   {
     question: "Does Seed Music claim to be an official product?",
