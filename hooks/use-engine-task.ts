@@ -37,19 +37,20 @@ export function useEngineRunner() {
   }, [])
 
   const applyResult = useCallback(
-    (trackId: string, result: EngineResult, params: RunParams): boolean => {
+    (trackId: string, result: EngineResult, params: RunParams, fallbackTaskId?: string): boolean => {
       if (result.state !== "ready") return false
 
       const tracks = result.tracks.filter((track) => track.audioUrl)
       const [first, ...rest] = tracks
       if (first?.audioUrl) {
+        const taskId = result.taskId ?? fallbackTaskId
         const baseTrack = {
           workflow: params.workflow,
-          taskId: result.taskId ?? undefined,
           model: params.model,
           tags: params.tags || first.meta,
           prompt: params.prompt,
           status: "ready" as const,
+          ...(taskId ? { taskId } : {}),
         }
 
         updateTrack(trackId, {
@@ -84,7 +85,7 @@ export function useEngineRunner() {
         attempts += 1
         try {
           const result = await pollWorkflow(params.workflow, taskId)
-          if (applyResult(trackId, result, params)) return
+          if (applyResult(trackId, result, params, taskId)) return
           if (result.state === "failed") {
             updateTrack(trackId, { status: "failed", error: result.error || "Generation failed" })
             return
@@ -119,7 +120,7 @@ export function useEngineRunner() {
           updateTrack(track.id, { status: "failed", error: result.error || "Submission failed" })
           return track.id
         }
-        if (applyResult(track.id, result, params)) return track.id
+        if (applyResult(track.id, result, params, result.taskId ?? undefined)) return track.id
         if (result.taskId) {
           updateTrack(track.id, { taskId: result.taskId })
           if (params.pollable) startPolling(track.id, params, result.taskId)

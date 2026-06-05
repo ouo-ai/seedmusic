@@ -23,10 +23,19 @@ export function CreatePanel({ initialMode = "song" }: { initialMode?: CreateMode
   const [feedIds, setFeedIds] = useState<string[]>([])
   const { tracks } = useLibrary()
 
-  const feed = useMemo(
-    () => feedIds.map((id) => tracks.find((track) => track.id === id)).filter((track): track is LibraryTrack => Boolean(track)),
-    [feedIds, tracks],
-  )
+  const feed = useMemo(() => {
+    const selectedIds = new Set(feedIds)
+    const selectedTaskIds = new Set(
+      feedIds
+        .map((id) => tracks.find((track) => track.id === id)?.taskId)
+        .filter((taskId): taskId is string => Boolean(taskId)),
+    )
+
+    return tracks.filter((track): track is LibraryTrack => {
+      if (selectedIds.has(track.id)) return true
+      return Boolean(track.taskId && selectedTaskIds.has(track.taskId))
+    })
+  }, [feedIds, tracks])
 
   const onCreated = (id: string) => setFeedIds((prev) => (prev.includes(id) ? prev : [id, ...prev]))
 
