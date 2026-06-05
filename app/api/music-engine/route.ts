@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { buildKieSubmitRequest, extractTaskId, getKieDetailPath } from "@/lib/kie-suno"
+import { isDownloadableMediaUrl } from "@/lib/media-links"
 import { MUSIC_MODEL_VERSIONS, MUSIC_WORKFLOWS } from "@/lib/music-workflows"
 
 export const runtime = "nodejs"
@@ -98,8 +99,9 @@ function extractTracks(value: unknown) {
 
 function extractState(value: unknown): "pending" | "ready" | "failed" {
   const data = asRecord(asRecord(value).data)
-  const status = typeof data.status === "string" ? data.status : ""
-  if (/FAIL|ERROR|SENSITIVE/i.test(status)) return "failed"
+  const status =
+    typeof data.status === "string" ? data.status : typeof data.successFlag === "string" ? data.successFlag : ""
+  if (/FAIL|FAILED|ERROR|EXCEPTION|SENSITIVE/i.test(status)) return "failed"
   if (status === "SUCCESS" || status === "FIRST_SUCCESS") return "ready"
   return "pending"
 }
@@ -174,18 +176,21 @@ function extractEngineError(value: unknown): string | undefined {
   )
 }
 
-function collectLinks(value: unknown, links: Array<{ label: string; url: string }> = []) {
+function collectLinks(value: unknown, links: Array<{ label: string; url: string }> = [], sourceKey?: string) {
   if (!value || links.length >= 8) return links
-  if (typeof value === "string" && /^https?:\/\//i.test(value)) {
-    links.push({ label: `Media ${links.length + 1}`, url: value })
+  if (typeof value === "string") {
+    const url = value.trim()
+    if (isDownloadableMediaUrl(url, sourceKey) && !links.some((link) => link.url === url)) {
+      links.push({ label: `Media ${links.length + 1}`, url })
+    }
     return links
   }
   if (Array.isArray(value)) {
-    value.forEach((item) => collectLinks(item, links))
+    value.forEach((item) => collectLinks(item, links, sourceKey))
     return links
   }
   if (typeof value === "object") {
-    Object.values(value).forEach((item) => collectLinks(item, links))
+    Object.entries(value).forEach(([key, item]) => collectLinks(item, links, key))
   }
   return links
 }

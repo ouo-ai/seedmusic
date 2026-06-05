@@ -3,7 +3,8 @@
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
 
-import { pollWorkflow, submitWorkflow } from "@/lib/music-engine-client"
+import { isDownloadableMediaUrl } from "@/lib/media-links"
+import { pollWorkflow, submitWorkflow, type EngineLink } from "@/lib/music-engine-client"
 import type { MusicWorkflowId } from "@/lib/music-workflows"
 import type { DerivedAsset, LibraryTrack } from "@/lib/studio-store"
 
@@ -25,6 +26,10 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function downloadLinks(links: EngineLink[]): EngineLink[] {
+  return links.filter((link) => isDownloadableMediaUrl(link.url))
+}
+
 export function useTrackActions() {
   const { updateTrack } = useLibrary()
   const { addPersona } = usePersonas()
@@ -33,7 +38,14 @@ export function useTrackActions() {
 
   const appendDerived = useCallback(
     (track: LibraryTrack, items: DerivedAsset[]) => {
-      updateTrack(track.id, { derived: [...(track.derived ?? []), ...items] })
+      const existing = (track.derived ?? []).filter((asset) => isDownloadableMediaUrl(asset.url))
+      const seen = new Set(existing.map((asset) => asset.url))
+      const next = items.filter((asset) => {
+        if (!isDownloadableMediaUrl(asset.url) || seen.has(asset.url)) return false
+        seen.add(asset.url)
+        return true
+      })
+      if (next.length) updateTrack(track.id, { derived: [...existing, ...next] })
     },
     [updateTrack],
   )
@@ -46,15 +58,16 @@ export function useTrackActions() {
       try {
         const result = await submitWorkflow({ workflow, taskId: track.taskId, audioId: track.audioId, ...extra })
         if (!result.ok) throw new Error(result.error || "Submission failed")
-        let links = result.links
+        let links = downloadLinks(result.links)
         const taskId = result.taskId
         let attempts = 0
         while (!links.length && taskId && attempts < DERIVED_MAX_POLLS) {
           attempts += 1
           await delay(DERIVED_POLL_INTERVAL_MS)
           const polled = await pollWorkflow(workflow, taskId)
-          if (polled.links.length) {
-            links = polled.links
+          const polledLinks = downloadLinks(polled.links)
+          if (polledLinks.length) {
+            links = polledLinks
             break
           }
           if (polled.state === "failed") throw new Error(polled.error || "Processing failed")
