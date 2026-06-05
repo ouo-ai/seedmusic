@@ -213,6 +213,13 @@ export type KieRequestConfig = {
 
 const MODEL_SET = new Set<string>(SUNO_MODEL_VERSIONS)
 const WORKFLOW_MAP = new Map(SUNO_WORKFLOWS.map((workflow) => [workflow.id, workflow]))
+const UNSUPPORTED_FIELD_HINTS: Record<string, string> = {
+  duration: "KIE Suno does not support a fixed duration request parameter. Exact track length is controlled by the selected model.",
+  durationSeconds: "KIE Suno does not support durationSeconds. Use model selection and prompts to influence structure; read the returned duration after generation.",
+  targetDuration: "KIE Suno does not support targetDuration. Exact track length is controlled by the selected model.",
+  audioDuration: "KIE Suno does not support audioDuration as an input parameter. The output duration is returned in the completed task.",
+  songDuration: "KIE Suno does not support songDuration. Exact track length is controlled by the selected model.",
+}
 
 function hasText(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0
@@ -225,6 +232,15 @@ function cleanString(value: unknown) {
 function cleanNumber(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) return undefined
   return value
+}
+
+function cleanRangeNumber(value: unknown, field: string, min: number, max: number) {
+  const number = cleanNumber(value)
+  if (number === undefined) return undefined
+  if (number < min || number > max) {
+    throw new Error(`${field} must be between ${min} and ${max}.`)
+  }
+  return number
 }
 
 function cleanPayload(payload: Record<string, unknown>) {
@@ -248,6 +264,21 @@ function requireFields(payload: Record<string, unknown>, fields: string[]) {
   }
 }
 
+function rejectKnownUnsupportedFields(input: KieSubmitInput) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return
+
+  const record = input as Record<string, unknown>
+  const unsupported = Object.keys(UNSUPPORTED_FIELD_HINTS).filter((field) => {
+    const value = record[field]
+    return value !== undefined && value !== null && !(typeof value === "string" && value.trim() === "")
+  })
+
+  if (unsupported.length === 0) return
+
+  const details = unsupported.map((field) => `${field}: ${UNSUPPORTED_FIELD_HINTS[field]}`).join(" ")
+  throw new Error(`Unsupported KIE Suno parameter${unsupported.length > 1 ? "s" : ""}. ${details}`)
+}
+
 function callbackUrl(input: KieSubmitInput, siteUrl: string) {
   if (cleanString(input.callBackUrl)) return cleanString(input.callBackUrl)
   return new URL("/api/music-engine/callback", siteUrl).toString()
@@ -265,9 +296,9 @@ function baseMusicPayload(input: KieSubmitInput, siteUrl: string) {
     title: cleanString(input.title),
     negativeTags: cleanString(input.negativeTags),
     vocalGender: cleanString(input.vocalGender),
-    styleWeight: cleanNumber(input.styleWeight),
-    weirdnessConstraint: cleanNumber(input.weirdnessConstraint),
-    audioWeight: cleanNumber(input.audioWeight),
+    styleWeight: cleanRangeNumber(input.styleWeight, "styleWeight", 0, 1),
+    weirdnessConstraint: cleanRangeNumber(input.weirdnessConstraint, "weirdnessConstraint", 0, 1),
+    audioWeight: cleanRangeNumber(input.audioWeight, "audioWeight", 0, 1),
     personaId: cleanString(input.personaId),
     personaModel: cleanString(input.personaModel),
   })
@@ -278,6 +309,12 @@ export function getSunoWorkflow(id: string) {
 }
 
 export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): KieRequestConfig {
+  if (!input || typeof input !== "object" || Array.isArray(input)) {
+    throw new Error("Request body must be an object.")
+  }
+
+  rejectKnownUnsupportedFields(input)
+
   const workflow = getSunoWorkflow(input.workflow)
   if (!workflow) {
     throw new Error(`Unsupported workflow: ${input.workflow}`)
@@ -296,7 +333,7 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         model: MODEL_SET.has(String(input.model)) ? input.model : "V5",
         callBackUrl: callbackUrl(input, siteUrl),
         soundLoop: input.soundLoop ?? false,
-        soundTempo: cleanNumber(input.soundTempo),
+        soundTempo: cleanRangeNumber(input.soundTempo, "soundTempo", 1, 300),
         soundKey: cleanString(input.soundKey),
         grabLyrics: input.grabLyrics ?? true,
       })
@@ -341,9 +378,9 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         callBackUrl: callbackUrl(input, siteUrl),
         model: MODEL_SET.has(String(input.model)) ? input.model : "V5_5",
         vocalGender: cleanString(input.vocalGender),
-        styleWeight: cleanNumber(input.styleWeight),
-        weirdnessConstraint: cleanNumber(input.weirdnessConstraint),
-        audioWeight: cleanNumber(input.audioWeight),
+        styleWeight: cleanRangeNumber(input.styleWeight, "styleWeight", 0, 1),
+        weirdnessConstraint: cleanRangeNumber(input.weirdnessConstraint, "weirdnessConstraint", 0, 1),
+        audioWeight: cleanRangeNumber(input.audioWeight, "audioWeight", 0, 1),
       })
       requireFields(payload, ["uploadUrl", "title", "tags"])
       break
@@ -357,9 +394,9 @@ export function buildKieSubmitRequest(input: KieSubmitInput, siteUrl: string): K
         callBackUrl: callbackUrl(input, siteUrl),
         model: MODEL_SET.has(String(input.model)) ? input.model : "V5_5",
         vocalGender: cleanString(input.vocalGender),
-        styleWeight: cleanNumber(input.styleWeight),
-        weirdnessConstraint: cleanNumber(input.weirdnessConstraint),
-        audioWeight: cleanNumber(input.audioWeight),
+        styleWeight: cleanRangeNumber(input.styleWeight, "styleWeight", 0, 1),
+        weirdnessConstraint: cleanRangeNumber(input.weirdnessConstraint, "weirdnessConstraint", 0, 1),
+        audioWeight: cleanRangeNumber(input.audioWeight, "audioWeight", 0, 1),
       })
       requireFields(payload, ["uploadUrl", "prompt", "title", "style"])
       break

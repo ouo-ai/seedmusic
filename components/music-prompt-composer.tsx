@@ -7,7 +7,6 @@ import { MUSIC_MODEL_VERSIONS, MUSIC_WORKFLOWS, type MusicWorkflowId } from "@/l
 type Genre = "Pop" | "Hip-Hop" | "Electronic" | "Rock" | "Jazz" | "Classical" | "Folk" | "R&B"
 type Mood = "Energetic" | "Chill" | "Melancholic" | "Uplifting" | "Dark" | "Romantic"
 type VocalMode = "Vocals" | "Instrumental"
-type Duration = "0:30" | "1:00" | "2:00" | "3:00"
 type Phase = "idle" | "submitting" | "created" | "ready" | "error"
 
 type ApiResult = {
@@ -33,7 +32,35 @@ type TrackResult = {
 
 const GENRES: Genre[] = ["Pop", "Hip-Hop", "Electronic", "Rock", "Jazz", "Classical", "Folk", "R&B"]
 const MOODS: Mood[] = ["Energetic", "Chill", "Melancholic", "Uplifting", "Dark", "Romantic"]
-const DURATIONS: Duration[] = ["0:30", "1:00", "2:00", "3:00"]
+const SOUND_KEYS = ["", "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"] as const
+const TITLE_WORKFLOWS = new Set<MusicWorkflowId>([
+  "generate",
+  "extend",
+  "upload-extend",
+  "upload-cover",
+  "add-instrumental",
+  "add-vocals",
+  "mashup",
+  "replace-section",
+  "generate-persona",
+  "generate-voice",
+])
+const STYLE_WORKFLOWS = new Set<MusicWorkflowId>([
+  "generate",
+  "extend",
+  "upload-extend",
+  "upload-cover",
+  "add-instrumental",
+  "add-vocals",
+  "mashup",
+  "replace-section",
+  "boost-style",
+  "generate-persona",
+  "generate-voice",
+])
+const GENRE_MOOD_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "extend", "upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup"])
+const LENGTH_NOTE_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "extend", "upload-extend", "upload-cover", "add-instrumental", "add-vocals", "mashup"])
+const VOCAL_MODE_WORKFLOWS = new Set<MusicWorkflowId>(["generate", "upload-cover", "add-vocals", "mashup"])
 const POLLABLE_WORKFLOWS = new Set<string>(MUSIC_WORKFLOWS.filter((workflow) => workflow.pollable).map((workflow) => workflow.id))
 
 const EXAMPLE_PROMPTS = [
@@ -134,23 +161,56 @@ function TextField({
   onChange,
   placeholder,
   type = "text",
+  min,
+  max,
 }: {
   label: string
   value: string
   onChange: (value: string) => void
   placeholder: string
   type?: "text" | "number" | "url"
+  min?: number
+  max?: number
 }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">{label}</span>
       <input
         type={type}
+        min={min}
+        max={max}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         className="h-10 rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 text-[#2A2420] text-sm font-sans placeholder:text-[rgba(42,36,32,0.35)] focus:outline-none focus:border-[rgba(42,36,32,0.36)]"
       />
+    </label>
+  )
+}
+
+function CheckboxField({
+  label,
+  checked,
+  onChange,
+  description,
+}: {
+  label: string
+  checked: boolean
+  onChange: (value: boolean) => void
+  description?: string
+}) {
+  return (
+    <label className="flex min-h-10 items-start gap-3 rounded-xl border border-[rgba(42,36,32,0.14)] bg-white px-3 py-2.5">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-0.5 h-4 w-4 rounded border-[rgba(42,36,32,0.24)] accent-[#2A2420]"
+      />
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="text-[12px] font-medium text-[#2A2420] font-sans">{label}</span>
+        {description && <span className="text-[11px] leading-4 text-[rgba(42,36,32,0.50)] font-sans">{description}</span>}
+      </span>
     </label>
   )
 }
@@ -165,12 +225,32 @@ function extractTracks(result: ApiResult | null): TrackResult[] {
   return result?.tracks || []
 }
 
+function getPromptLimit(workflowId: MusicWorkflowId, model: string) {
+  if (workflowId === "sounds") return 500
+  if (workflowId === "generate-lyrics") return 200
+  if (workflowId === "boost-style") return 3000
+  if (workflowId === "generate" && (model === "V3_5" || model === "V4")) return 3000
+  return 5000
+}
+
+function getLengthNote(model: string) {
+  if (model === "V3_5" || model === "V4") {
+    return "KIE Suno does not expose a fixed duration parameter. This model controls exact length internally, with a documented max around 4 minutes."
+  }
+  if (["V4_5", "V4_5PLUS", "V4_5ALL", "V5"].includes(model)) {
+    return "KIE Suno does not expose a fixed duration parameter. This model controls exact length internally, with a documented max around 8 minutes."
+  }
+  return "KIE Suno does not expose a fixed duration parameter for this model. The returned track duration is available after generation."
+}
+
 export default function MusicPromptComposer() {
   const [prompt, setPrompt] = useState("")
   const [genre, setGenre] = useState<Genre>("Electronic")
   const [mood, setMood] = useState<Mood>("Energetic")
   const [vocals, setVocals] = useState<VocalMode>("Instrumental")
-  const [duration, setDuration] = useState<Duration>("2:00")
+  const [soundLoop, setSoundLoop] = useState(false)
+  const [soundTempo, setSoundTempo] = useState("")
+  const [soundKey, setSoundKey] = useState("")
   const [workflowId, setWorkflowId] = useState<MusicWorkflowId>("generate")
   const [model, setModel] = useState("V5_5")
   const [title, setTitle] = useState("Seed Music draft")
@@ -186,7 +266,9 @@ export default function MusicPromptComposer() {
   const [playingTrack, setPlayingTrack] = useState<number | null>(null)
 
   const workflow = useMemo(() => MUSIC_WORKFLOWS.find((item) => item.id === workflowId) || MUSIC_WORKFLOWS[0], [workflowId])
-  const charLeft = 5000 - prompt.length
+  const promptLimit = getPromptLimit(workflowId, model)
+  const visiblePrompt = prompt.slice(0, promptLimit)
+  const charLeft = promptLimit - visiblePrompt.length
   const tracks = extractTracks(result)
   const links = (result?.links || []).filter((link) => !tracks.some((track) => track.audioUrl === link.url)).slice(0, 5)
   const activeTaskId = taskId || extractTaskId(result)
@@ -215,8 +297,13 @@ export default function MusicPromptComposer() {
     "convert-wav",
     "generate-persona",
   ].includes(workflowId)
+  const showsLengthNote = LENGTH_NOTE_WORKFLOWS.has(workflowId)
+  const showsVocalControl = VOCAL_MODE_WORKFLOWS.has(workflowId)
+  const showsTitleField = TITLE_WORKFLOWS.has(workflowId)
+  const showsStyleField = STYLE_WORKFLOWS.has(workflowId)
+  const showsGenreMood = GENRE_MOOD_WORKFLOWS.has(workflowId)
 
-  const handleExample = (example: string) => setPrompt(example)
+  const handleExample = (example: string) => setPrompt(example.slice(0, promptLimit))
 
   const buildPayload = () => {
     const styleText = style.trim() || `${genre}, ${mood}, ${vocals}`
@@ -224,7 +311,7 @@ export default function MusicPromptComposer() {
     return {
       workflow: workflowId,
       model,
-      prompt: prompt.trim(),
+      prompt: visiblePrompt.trim(),
       customMode: true,
       defaultParamFlag: true,
       instrumental: vocals === "Instrumental",
@@ -236,7 +323,7 @@ export default function MusicPromptComposer() {
       uploadUrlList,
       taskId: activeTaskId,
       audioId,
-      content: styleText,
+      content: workflowId === "boost-style" ? visiblePrompt.trim() || styleText : styleText,
       continueAt: continueAt ? Number(continueAt) : undefined,
       infillStartS: 20,
       infillEndS: 40,
@@ -244,11 +331,13 @@ export default function MusicPromptComposer() {
       author: "Seed Music",
       domainName: "seed.music",
       name: title,
-      description: prompt,
+      description: visiblePrompt,
       verifyUrl: uploadUrl,
       voiceName: title,
       singerSkillLevel: "beginner",
-      soundLoop: duration === "0:30",
+      soundLoop,
+      soundTempo: soundTempo ? Number(soundTempo) : undefined,
+      soundKey,
       grabLyrics: true,
     }
   }
@@ -298,7 +387,7 @@ export default function MusicPromptComposer() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" data-testid="music-composer">
       <div className="flex items-center justify-between px-5 py-3 border-b border-[rgba(42,36,32,0.08)]">
         <div className="flex items-center gap-2">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -345,8 +434,8 @@ export default function MusicPromptComposer() {
 
             <div className="relative">
               <textarea
-                value={prompt}
-                onChange={(event) => setPrompt(event.target.value.slice(0, 5000))}
+                value={visiblePrompt}
+                onChange={(event) => setPrompt(event.target.value.slice(0, promptLimit))}
                 placeholder="Describe the music, lyrics, edit, voice, or post-processing request for the selected workflow..."
                 rows={5}
                 className="w-full resize-none rounded-xl border border-[rgba(42,36,32,0.14)] bg-[#FAFAF9] px-4 py-3 text-[#2A2420] text-sm font-sans placeholder:text-[rgba(42,36,32,0.35)] focus:outline-none focus:border-[rgba(42,36,32,0.36)] leading-relaxed"
@@ -370,20 +459,45 @@ export default function MusicPromptComposer() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <TextField label="Title" value={title} onChange={setTitle} placeholder="Seed Music draft" />
-              <TextField label="Style / Tags" value={style} onChange={setStyle} placeholder="Electronic, cinematic, upbeat" />
-            </div>
+            {(showsTitleField || showsStyleField) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {showsTitleField && <TextField label="Title" value={title} onChange={setTitle} placeholder="Seed Music draft" />}
+                {showsStyleField && <TextField label={workflowId === "boost-style" ? "Style Idea" : "Style / Tags"} value={style} onChange={setStyle} placeholder="Electronic, cinematic, upbeat" />}
+              </div>
+            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <PillSelector label="Genre" options={GENRES} value={genre} onChange={setGenre} />
-              <PillSelector label="Mood" options={MOODS} value={mood} onChange={setMood} />
-            </div>
+            {showsGenreMood && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <PillSelector label="Genre" options={GENRES} value={genre} onChange={setGenre} />
+                <PillSelector label="Mood" options={MOODS} value={mood} onChange={setMood} />
+              </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-4">
-              <PillSelector label="Vocals" options={["Vocals", "Instrumental"] as VocalMode[]} value={vocals} onChange={setVocals} />
-              <PillSelector label="Duration" options={DURATIONS} value={duration} onChange={setDuration} />
-            </div>
+            {(showsVocalControl || showsLengthNote) && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {showsVocalControl && <PillSelector label="Vocals" options={["Vocals", "Instrumental"] as VocalMode[]} value={vocals} onChange={setVocals} />}
+                {showsLengthNote && (
+                <div className="rounded-xl border border-[rgba(42,36,32,0.10)] bg-[#FAFAF9] px-3 py-2.5">
+                  <div className="text-[11px] font-medium text-[rgba(42,36,32,0.50)] uppercase tracking-wide font-sans">Length</div>
+                  <div className="mt-1 text-[11px] leading-4 text-[#857870] font-sans">{getLengthNote(model)}</div>
+                </div>
+                )}
+              </div>
+            )}
+
+            {workflowId === "sounds" && (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <CheckboxField label="Loop" checked={soundLoop} onChange={setSoundLoop} description="Uses KIE sound_loop." />
+                <TextField label="BPM" value={soundTempo} onChange={setSoundTempo} placeholder="Auto" type="number" min={1} max={300} />
+                <SelectField label="Key" value={soundKey} onChange={setSoundKey}>
+                  {SOUND_KEYS.map((key) => (
+                    <option key={key || "auto"} value={key}>
+                      {key || "Auto"}
+                    </option>
+                  ))}
+                </SelectField>
+              </div>
+            )}
 
             {(needsUpload || workflowId === "mashup") && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
